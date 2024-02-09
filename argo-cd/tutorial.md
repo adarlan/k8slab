@@ -1,13 +1,32 @@
 
 TODO install with terraform
+https://piotrminkowski.com/2022/06/28/manage-kubernetes-cluster-with-terraform-and-argo-cd/
+https://www.youtube.com/watch?v=TrTRy8ahIHc
 https://blog.saintmalik.me/argocd-on-kubernetes-cluster/
 
-Installing Argo CD
+TODO high availability for production
+
+## Installing Argo CD with Kubectl (DEPRECATED)
 
 ```shell
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
+
+## Installing Argo CD with Helm (DEPRECATED)
+
+```shell
+helm repo add argo https://argoproj.github.io/argo-helm
+
+helm fetch argo/argo-cd --untar
+
+helm install argocd ./argo-cd/ --values values.yaml --namespace argocd
+
+# uninstall
+helm uninstall argocd --namespace argocd
+```
+
+##
 
 Exposing the Argo CD API server
 
