@@ -1,4 +1,7 @@
 
+TODO install with terraform
+https://blog.saintmalik.me/argocd-on-kubernetes-cluster/
+
 Installing Argo CD
 
 ```shell
