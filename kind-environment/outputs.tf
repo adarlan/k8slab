@@ -1,6 +1,6 @@
 
 output "kubeconfig" {
-  value     = module.kind.kubeconfig
+  value     = module.kind-cluster.kubeconfig
   sensitive = true
 }
 
