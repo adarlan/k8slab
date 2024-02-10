@@ -1,16 +1,12 @@
 
-resource "aws_iam_instance_profile" "karpenter_instance_profile" {
-  name = "${var.cluster_name}/karpenter-instance-profile"
-  role = aws_iam_role.karpenter_role.name
-}
 
-resource "aws_iam_role" "karpenter_role" {
-  assume_role_policy = data.aws_iam_policy_document.karpenter_assume_role_policy.json
+resource "aws_iam_role" "karpenter_controller_role" {
+  assume_role_policy = data.aws_iam_policy_document.karpenter_controller_assume_role_policy.json
   name               = "${var.cluster_name}/karpenter-role"
   tags               = merge(var.tags, { Name = "${var.cluster_name}/karpenter-role" })
 }
 
-data "aws_iam_policy_document" "karpenter_assume_role_policy" {
+data "aws_iam_policy_document" "karpenter_controller_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     effect  = "Allow"
@@ -26,7 +22,7 @@ data "aws_iam_policy_document" "karpenter_assume_role_policy" {
   }
 }
 
-data "aws_iam_policy_document" "karpenter_policy_document" {
+data "aws_iam_policy_document" "karpenter_controller_policy_document" {
   statement {
     effect = "Allow"
     actions = [
@@ -61,36 +57,36 @@ data "aws_iam_policy_document" "karpenter_policy_document" {
   }
 }
 
-resource "aws_iam_policy" "karpenter_policy" {
-  policy = data.aws_iam_policy_document.karpenter_policy_document.json
+resource "aws_iam_policy" "karpenter_controller_policy" {
+  policy = data.aws_iam_policy_document.karpenter_controller_policy_document.json
   name   = "${var.cluster_name}/karpenter-policy"
 }
 
-resource "aws_iam_role_policy_attachment" "karpenter_role_policy_attachment" {
-  role       = aws_iam_role.karpenter_role.name
-  policy_arn = aws_iam_policy.karpenter_policy.arn
+resource "aws_iam_role_policy_attachment" "karpenter_controller_role_policy_attachment" {
+  role       = aws_iam_role.karpenter_controller_role.name
+  policy_arn = aws_iam_policy.karpenter_controller_policy.arn
 }
 
-# cluster policies
-resource "aws_iam_role_policy_attachment" "karpenter_role_policy_attachment_AmazonEKSClusterPolicy" {
+# TODO cluster policies?
+resource "aws_iam_role_policy_attachment" "karpenter_controller_role_policy_attachment_AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.karpenter_role.name
+  role       = aws_iam_role.karpenter_controller_role.name
 }
-resource "aws_iam_role_policy_attachment" "karpenter_role_policy_attachment_AmazonEKSVPCResourceController" {
+resource "aws_iam_role_policy_attachment" "karpenter_controller_role_policy_attachment_AmazonEKSVPCResourceController" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-  role       = aws_iam_role.karpenter_role.name
+  role       = aws_iam_role.karpenter_controller_role.name
 }
 
-# node policies
-resource "aws_iam_role_policy_attachment" "karpenter_role_policy_attachment_AmazonEKSWorkerNodePolicy" {
+# TODO node policies?
+resource "aws_iam_role_policy_attachment" "karpenter_controller_role_policy_attachment_AmazonEKSWorkerNodePolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.karpenter_role.name
+  role       = aws_iam_role.karpenter_controller_role.name
 }
-resource "aws_iam_role_policy_attachment" "karpenter_role_policy_attachment_AmazonEKS_CNI_Policy" {
+resource "aws_iam_role_policy_attachment" "karpenter_controller_role_policy_attachment_AmazonEKS_CNI_Policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.karpenter_role.name
+  role       = aws_iam_role.karpenter_controller_role.name
 }
-resource "aws_iam_role_policy_attachment" "karpenter_role_policy_attachment_AmazonEC2ContainerRegistryReadOnly" {
+resource "aws_iam_role_policy_attachment" "karpenter_controller_role_policy_attachment_AmazonEC2ContainerRegistryReadOnly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.karpenter_role.name
+  role       = aws_iam_role.karpenter_controller_role.name
 }

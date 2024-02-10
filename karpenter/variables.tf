@@ -25,3 +25,7 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "node_group_role_name" {
+  type = string
+}

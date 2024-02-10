@@ -8,6 +8,7 @@ spec:
   ttlSecondsUntilExpired: 604800 # expire nodes after 7 days (in seconds) = 7 * 60 * 60 * 24
   limits:
     resources:
+      # you can limit how many nodes karpenter can create by limiting the cpu cores
       cpu: 100 # limit to 100 CPU cores
   requirements:
     # Include general purpose instance families

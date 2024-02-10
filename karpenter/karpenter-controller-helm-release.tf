@@ -1,6 +1,6 @@
 
-resource "helm_release" "karpenter" {
-  name = "${var.cluster_name}/karpenter"
+resource "helm_release" "karpenter_controller" {
+  name = "${var.cluster_name}/karpenter-controller"
 
   namespace        = "karpenter"
   create_namespace = true
@@ -11,7 +11,7 @@ resource "helm_release" "karpenter" {
 
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.karpenter_role.arn
+    value = aws_iam_role.karpenter_controller_role.arn
   }
 
   set {
@@ -26,6 +26,9 @@ resource "helm_release" "karpenter" {
 
   set {
     name  = "aws.defaultInstanceProfile"
-    value = aws_iam_instance_profile.karpenter_instance_profile.name
+    value = aws_iam_instance_profile.karpenter_controller_instance_profile.name
   }
+
+  # TODO depends_on private_node_group
+  # but this dependency is already implicit bu modules dependency
 }
