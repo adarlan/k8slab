@@ -5,12 +5,6 @@ resource "aws_eks_addon" "vpc_cni" {
   tags = merge(var.tags, { Name = "${var.cluster_name}/vpc-cni" })
 }
 
-resource "aws_eks_addon" "ebs_csi_driver" {
-  cluster_name = var.cluster_name
-  addon_name   = "aws-ebs-csi-driver"
-  tags = merge(var.tags, { Name = "${var.cluster_name}/ebs-csi-driver" })
-}
-
 resource "aws_eks_addon" "core_dns" {
   cluster_name = var.cluster_name
   addon_name   = "coredns"
