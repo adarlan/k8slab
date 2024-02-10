@@ -14,11 +14,11 @@ variable "k8s_auth_credentials" {
 }
 
 variable "eks_oidc_provider_url" {
-    type = string
+  type = string
 }
 
 variable "eks_oidc_provider_arn" {
-    type = string
+  type = string
 }
 
 variable "tags" {

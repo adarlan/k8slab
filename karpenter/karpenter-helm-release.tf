@@ -1,6 +1,6 @@
 
 resource "helm_release" "karpenter" {
-  name       = "${var.cluster_name}/karpenter"
+  name = "${var.cluster_name}/karpenter"
 
   namespace        = "karpenter"
   create_namespace = true

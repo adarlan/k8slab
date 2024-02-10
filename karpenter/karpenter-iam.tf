@@ -7,7 +7,7 @@ resource "aws_iam_instance_profile" "karpenter_instance_profile" {
 resource "aws_iam_role" "karpenter_role" {
   assume_role_policy = data.aws_iam_policy_document.karpenter_assume_role_policy.json
   name               = "${var.cluster_name}/karpenter-role"
-  tags = merge(var.tags, { Name = "${var.cluster_name}/karpenter-role" })
+  tags               = merge(var.tags, { Name = "${var.cluster_name}/karpenter-role" })
 }
 
 data "aws_iam_policy_document" "karpenter_assume_role_policy" {
@@ -28,7 +28,7 @@ data "aws_iam_policy_document" "karpenter_assume_role_policy" {
 
 data "aws_iam_policy_document" "karpenter_policy_document" {
   statement {
-    effect    = "Allow"
+    effect = "Allow"
     actions = [
       "ssm:GetParameter",
       "iam:PassRole",
