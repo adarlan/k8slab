@@ -1,25 +1,22 @@
-terraform {
-  required_providers {
-    helm = {
-      source  = "hashicorp/helm"
-      version = ">= 2"
-    }
-  }
-}
-
 provider "helm" {
   kubernetes {
-    config_path = "~/.kube/config"
+    host = var.host
+    cluster_ca_certificate = var.cluster_ca_certificate
+    client_certificate = var.client_certificate
+    client_key = var.client_key
   }
 }
 
 resource "helm_release" "kube_prometheus" {
-  name       = "prometheus-community"
+  name = "prometheus-community"
+
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
-  namespace = "monitoring"
+  version    = "48.6.0"
+  
+  namespace        = "monitoring"
   create_namespace = true
-  version = "48.6.0"
+  
 
   #   dynamic "set" {
   #     for_each = var.values
