@@ -16,10 +16,10 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_subnet" "private" {
-  count             = local.private_subnet_count
-  vpc_id            = aws_vpc.vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.vpc.cidr_block, 8, local.public_subnet_count + count.index)
-  availability_zone = local.az_names[count.index]
+  count                   = local.private_subnet_count
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = cidrsubnet(aws_vpc.vpc.cidr_block, 8, local.public_subnet_count + count.index)
+  availability_zone       = local.az_names[count.index]
   map_public_ip_on_launch = false
   tags = merge(
     var.tags,
