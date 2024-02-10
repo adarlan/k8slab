@@ -41,8 +41,8 @@ resource "aws_iam_policy" "node_group_route53_policy" {
 
 data "aws_iam_policy_document" "node_group_route53_policy_document" {
   statement {
-    effect = "Allow"
-    actions = ["route53:ChangeResourceRecordSets"]
+    effect    = "Allow"
+    actions   = ["route53:ChangeResourceRecordSets"]
     resources = ["arn:aws:route53:::hostedzone/*"]
   }
   statement {

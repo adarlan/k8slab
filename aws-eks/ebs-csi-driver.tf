@@ -5,10 +5,10 @@ data "aws_eks_addon_version" "ebs_csi_driver_version" {
 }
 
 resource "aws_eks_addon" "ebs_csi_driver" {
-  addon_name        = "aws-ebs-csi-driver"
-  addon_version     = data.aws_eks_addon_version.ebs_csi_driver_version.version
-  cluster_name      = var.cluster_name
-  tags = merge(var.tags, { Name = "${var.cluster_name}/ebs-csi-driver" })
+  addon_name    = "aws-ebs-csi-driver"
+  addon_version = data.aws_eks_addon_version.ebs_csi_driver_version.version
+  cluster_name  = var.cluster_name
+  tags          = merge(var.tags, { Name = "${var.cluster_name}/ebs-csi-driver" })
 }
 
 data "aws_eks_node_groups" "eks_node_groups" {

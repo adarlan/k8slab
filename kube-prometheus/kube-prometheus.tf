@@ -1,9 +1,9 @@
 provider "helm" {
   kubernetes {
-    host = var.host
+    host                   = var.host
     cluster_ca_certificate = var.cluster_ca_certificate
-    client_certificate = var.client_certificate
-    client_key = var.client_key
+    client_certificate     = var.client_certificate
+    client_key             = var.client_key
   }
 }
 
@@ -13,10 +13,10 @@ resource "helm_release" "kube_prometheus" {
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
   version    = "48.6.0"
-  
+
   namespace        = "monitoring"
   create_namespace = true
-  
+
 
   #   dynamic "set" {
   #     for_each = var.values

@@ -2,7 +2,7 @@
 resource "aws_iam_role" "cluster_role" {
   name               = "${var.cluster_name}/eks-cluster-role"
   assume_role_policy = data.aws_iam_policy_document.cluster_assume_role.json
-  tags = merge(var.tags, { Name = "${var.cluster_name}/eks-cluster-role" })
+  tags               = merge(var.tags, { Name = "${var.cluster_name}/eks-cluster-role" })
 }
 
 data "aws_iam_policy_document" "cluster_assume_role" {
