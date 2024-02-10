@@ -29,16 +29,15 @@ resource "aws_iam_role_policy_attachment" "node_group_role_AmazonEC2ContainerReg
   role       = aws_iam_role.node_group_role.name
 }
 
+# TODO what is it used for?
 resource "aws_iam_role_policy_attachment" "node_group_route53_policy_attachment" {
   role       = aws_iam_role.node_group_role.name
   policy_arn = aws_iam_policy.node_group_route53_policy.arn
 }
-
 resource "aws_iam_policy" "node_group_route53_policy" {
   policy = data.aws_iam_policy_document.node_group_route53_policy_document.json
   name   = "${var.cluster_name}/node-group-route53-policy"
 }
-
 data "aws_iam_policy_document" "node_group_route53_policy_document" {
   statement {
     effect    = "Allow"

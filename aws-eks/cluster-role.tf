@@ -21,6 +21,7 @@ resource "aws_iam_role_policy_attachment" "cluster_role_AmazonEKSClusterPolicy" 
   role       = aws_iam_role.cluster_role.name
 }
 
+# TODO what is it needed for?
 resource "aws_iam_role_policy_attachment" "cluster_role_AmazonEKSVPCResourceController" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
   role       = aws_iam_role.cluster_role.name
