@@ -33,3 +33,17 @@ rm argocd-linux-amd64
 
 Install Helm
 https://helm.sh/docs/intro/install/
+
+## TODO
+
+Horizontal Pod Autoscaling
+https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+
+https://codefresh.io/blog/argo-cd-best-practices/
+
+https://piotrminkowski.com/2022/06/28/manage-kubernetes-cluster-with-terraform-and-argo-cd/
+https://www.youtube.com/watch?v=TrTRy8ahIHc
+https://blog.saintmalik.me/argocd-on-kubernetes-cluster/
+https://betterprogramming.pub/how-to-set-up-argo-cd-with-terraform-to-implement-pure-gitops-d5a1d797926a
+
+TODO high availability argo cd for production
