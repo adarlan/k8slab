@@ -5,6 +5,9 @@ resource "kind_cluster" "default" {
 
   wait_for_ready = true
 
+  kubeconfig_path = pathexpand("./kubeconfig")
+  # This file will be created in the directory where 'terraform apply' is executed, not within this module's directory
+
   kind_config {
     kind        = "Cluster"
     api_version = "kind.x-k8s.io/v1alpha4"
@@ -27,6 +30,14 @@ resource "kind_cluster" "default" {
           host_port      = 443
           protocol       = "TCP"
       }
+    }
+
+    node {
+      role = "worker"
+    }
+
+    node {
+      role = "worker"
     }
 
     node {
