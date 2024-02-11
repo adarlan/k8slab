@@ -2,28 +2,21 @@
 set -e
 
 echo "Creating local environment"
-export TF_LOG=INFO
+# export TF_LOG=INFO
 terraform init
 terraform apply
 
-echo "Exporting kubeconfig file"
-terraform output kubeconfig > kubeconfig
-sed -i '1s/^<<EOT$//' kubeconfig
-sed -i '${/^EOT$/d;}' kubeconfig
-mv kubeconfig ~/.kube/config
+echo "Copying kubeconfig file to ~/.kube/config"
+cp kubeconfig ~/.kube/config
 
 echo "Interacting with the cluster"
 kubectl cluster-info
 
-# -----------
-
-echo "Waiting until Nginx Ingress is ready to process requests"
-kubectl wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=90s
-
-# -----------
+# echo "Waiting until Nginx Ingress is ready to process requests"
+# kubectl wait --namespace ingress-nginx \
+#   --for=condition=ready pod \
+#   --selector=app.kubernetes.io/component=controller \
+#   --timeout=90s
 
 echo "Exposing the Argo CD API server"
 kubectl port-forward svc/argocd-server -n argocd 8080:443 > /dev/null 2>&1 &
