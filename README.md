@@ -51,6 +51,8 @@ TODO high availability argo cd for production
 https://aws.github.io/aws-eks-best-practices/networking/subnets/
 https://medium.com/@leocherian/amazon-eks-cluster-with-private-endpoint-e1c70ea1be5f
 
+https://www.youtube.com/watch?v=qHGKO69hMlw
+
 ## Testing Karpenter
 
 apply a multi-replica deployment with CPU and memory requests that dont fit in the node group instance type
