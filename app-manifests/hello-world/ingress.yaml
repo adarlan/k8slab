@@ -2,12 +2,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hello-world
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
-  - host: localhost # TODO how to make it as a parameter? helm values? how argocd deals with that?
+  - host: localhost # TODO how to make it as a parameter? helm values? how can argocd set this?
     http:
       paths:
-      - pathType: Prefix
+      - pathType: ImplementationSpecific
         path: /hello-world(/|$)(.*)
         backend:
           service:
