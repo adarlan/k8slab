@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "\nDestroying local environment"
+echo "Destroying local environment"
 export TF_LOG=INFO
 terraform destroy

@@ -2,7 +2,7 @@
 set -e
 
 echo "Creating local environment"
-# export TF_LOG=INFO
+export TF_LOG=INFO
 terraform init
 terraform apply
 
@@ -12,13 +12,7 @@ cp kubeconfig ~/.kube/config
 echo "Interacting with the cluster"
 kubectl cluster-info
 
-# echo "Waiting until Nginx Ingress is ready to process requests"
-# kubectl wait --namespace ingress-nginx \
-#   --for=condition=ready pod \
-#   --selector=app.kubernetes.io/component=controller \
-#   --timeout=90s
-
-echo "Exposing the Argo CD API server"
+echo "Exposing Argo CD server"
 kubectl port-forward svc/argocd-server -n argocd 8080:443 > /dev/null 2>&1 &
 sleep 5
 
@@ -29,14 +23,10 @@ argocd login --insecure localhost:8080 --username admin --password $ARGOCD_PASSW
 argocd cluster add $CONTEXT_CLUSTER -y --in-cluster
 
 echo "Creating Argo CD applications"
-kubectl apply -f ./../../argocd-apps/argocd-apps.yaml
+kubectl apply -f ./../argocd-apps
 
-echo "Open Argo CD UI in your browser"
-echo "URL: https://127.0.0.1:8080"
-echo "Username: admin"
-echo "Password: $ARGOCD_PASSWORD"
+echo "Syncing Argo CD applications"
+argocd app sync --project default
 
-echo "Syncing hello-world application and exposing its service"
-argocd app sync hello-world
+echo "Exposing hello-world application"
 kubectl port-forward svc/hello-world 8081:8080 -n hello-world > /dev/null 2>&1 &
-echo "URL: https://127.0.0.1:8081"
