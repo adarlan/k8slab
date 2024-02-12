@@ -8,7 +8,7 @@ spec:
     http:
       paths:
       - pathType: Prefix
-        path: "/hello-world"
+        path: /hello-world(/|$)(.*)
         backend:
           service:
             name: hello-world
