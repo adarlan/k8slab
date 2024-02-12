@@ -1,0 +1,10 @@
+---
+- name: Local setup
+  hosts: localhost
+  # become: true
+
+  tasks:
+    - name: Clone tfenv repository
+      git:
+        repo: https://github.com/tfutils/tfenv.git
+        dest: ~/.tfenv
