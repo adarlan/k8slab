@@ -1,6 +1,19 @@
 
 ## TODO
 
+argo cd chart documentation
+https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
+https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+
+https://nickjanetakis.com/blog/configuring-a-kind-cluster-with-nginx-ingress-using-terraform-and-helm
+
+terraform destroy... if the cluster is broken, terraform can not remove the helm releases
+and terraform will not destroy the cluster before removing the helm releases
+the cluster provisioning should be separate
+
+aws nuke
+
 Horizontal Pod Autoscaling
 https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 
