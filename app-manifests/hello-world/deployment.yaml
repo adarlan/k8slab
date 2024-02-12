@@ -30,17 +30,17 @@ spec:
             path: /
           initialDelaySeconds: 30
           periodSeconds: 10
-        volumeMounts:
-        - mountPath: /usr/share/nginx/html
-          name: html-files
-      volumes:
-      - name: html-files
-        configMap:
-          name: html-files
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: html-files
-data:
-  index.html: <h1>Hello, World!</h1>
+#         volumeMounts:
+#         - mountPath: /usr/share/nginx/html
+#           name: html-files
+#       volumes:
+#       - name: html-files
+#         configMap:
+#           name: html-files
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: html-files
+# data:
+#   index.html: <h1>Hello, World!</h1>
