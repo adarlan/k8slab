@@ -6,12 +6,17 @@ module "kind-cluster" {
 
 module "kind-nginx-ingress-controller" {
   source = "./../kind-nginx-ingress-controller"
-  depends_on = [ module.kind-cluster ]
+  depends_on = [
+    module.kind-cluster
+  ]
 }
 
 module "argo-cd" {
-  source                 = "./../argo-cd"
-  depends_on = [ module.kind-cluster ]
+  source = "./../argo-cd"
+  depends_on = [
+    module.kind-cluster,
+    module.kind-nginx-ingress-controller
+  ]
 }
 
 # module "kube-prometheus" {
