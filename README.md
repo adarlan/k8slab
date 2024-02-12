@@ -5,11 +5,10 @@
 ### Create local environment
 
 ```shell
-cd kind-environment
 ./up.sh
 ```
 
-### Open argo-cd
+### Open Argo CD server
 
 Open in your browser:
 https://127.0.0.1:8080
@@ -23,13 +22,12 @@ Retrieve the password by running:
 kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 --decode
 ```
 
-### Open applications
+### Open applications in your browser
 
-hello-world: https://127.0.0.1:8081
+hello-world: http://127.0.0.1:8081
 
 ### Destroy local environment
 
 ```shell
-cd kind-environment
-./up.sh
+./down.sh
 ```
