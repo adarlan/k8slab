@@ -17,3 +17,30 @@ spec:
         image: nginx
         ports:
         - containerPort: 80
+        resources:
+          requests:
+            memory: 100MiB
+            cpu: 100m
+          limits:
+            memory: 150MiB
+            cpu: 150m
+        livenessProbe:
+          httpGet:
+            port: 80
+            path: /
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: html-files
+      volumes:
+      - name: html-files
+        configMap:
+          name: html-files
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: html-files
+data:
+  index.html: <h1>Hello, World!</h1>

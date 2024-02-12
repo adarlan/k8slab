@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world
+spec:
+  rules:
+  - host: localhost # TODO how to make it as a parameter? helm values? how argocd deals with that?
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/hello-world"
+        backend:
+          service:
+            name: hello-world
+            port: 
+              number: 80
