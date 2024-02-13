@@ -39,16 +39,12 @@ https://medium.com/@leocherian/amazon-eks-cluster-with-private-endpoint-e1c70ea1
 
 https://www.youtube.com/watch?v=qHGKO69hMlw
 
-## Testing Karpenter
-
+Testing Karpenter
 apply a multi-replica deployment with CPU and memory requests that dont fit in the node group instance type
-
 follow karpenter logs
 kubectl logs -f -n karpenter
-
 Whatch this in different windows
 watch -n 1 -t kubectl get pods
 watch -n 1 -t kubectl get nodes
-
 Create the deployment with 5 replicas
 kubectl apply -f deployment.yaml
