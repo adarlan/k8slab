@@ -1,6 +1,12 @@
 
 ## TODO
 
+App manifests > ingress rules
+how to make host as a parameter? helm values? Can argocd set this?
+
+Argo CD ingress configuration
+https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/
+
 argo cd chart documentation
 https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
 
@@ -11,6 +17,8 @@ https://nickjanetakis.com/blog/configuring-a-kind-cluster-with-nginx-ingress-usi
 terraform destroy... if the cluster is broken, terraform can not remove the helm releases
 and terraform will not destroy the cluster before removing the helm releases
 the cluster provisioning should be separate
+
+kubernetes dashboard
 
 aws nuke
 
