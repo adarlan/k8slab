@@ -1,6 +1,7 @@
 
 module "aws-vpc" {
-  source                = "./../aws-vpc"
+  source                = "./../../cloud-network/aws-vpc"
+
   cluster_name          = var.cluster_name
   vpc_cidr_block        = var.vpc_cidr_block
   tags                  = var.tags

@@ -17,9 +17,11 @@ resource "null_resource" "local_exec" {
     EOF
   }
 
+  # TODO must wait for argocd CRD is ready. depends_on is not enough
+
   depends_on = [
     module.kind-cluster,
-    module.kind-nginx-ingress-controller,
+    module.ingress-nginx,
     module.argo-cd,
   ]
 }
