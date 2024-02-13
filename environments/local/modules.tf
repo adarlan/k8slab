@@ -21,6 +21,15 @@ module "argo-cd" {
   ]
 }
 
+module "argocd_apps" {
+  source = "./../../argocd-apps"
+
+  depends_on = [
+    module.kind-cluster,
+    module.argo-cd
+  ]
+}
+
 # module "kube-prometheus" {
 #   source                 = "./../../kube-prometheus"
 #   host                   = module.kind-cluster.endpoint
