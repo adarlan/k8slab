@@ -10,7 +10,6 @@ resource "helm_release" "kind_nginx_ingress_controller" {
   create_namespace = true
 
   values = [ file("${path.module}/helm-values.yaml") ]
-  # TODO use ${path.module}?
 }
 
 resource "null_resource" "wait_for_ingress_nginx" {

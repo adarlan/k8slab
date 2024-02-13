@@ -1,4 +1,3 @@
-
 resource "null_resource" "local_exec" {
   triggers = {
     key = uuid()
@@ -17,7 +16,7 @@ resource "null_resource" "local_exec" {
     EOF
   }
 
-  # TODO must wait for argocd CRD is ready. depends_on is not enough
+  # TODO must wait for argo-cd is ready. depends_on is not enough
 
   depends_on = [
     module.kind-cluster,
