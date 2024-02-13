@@ -1,14 +1,14 @@
 
 resource "aws_eks_node_group" "private_node_group" {
-  cluster_name    = var.cluster_name
+  cluster_name = var.cluster_name
 
   node_group_name = "private-node-group"
   subnet_ids      = var.private_subnet_ids
 
-  node_role_arn   = aws_iam_role.node_group_role.arn
+  node_role_arn = aws_iam_role.node_group_role.arn
 
-  capacity_type = "ON_DEMAND"
-  instance_types = [ "t3.small" ]
+  capacity_type  = "ON_DEMAND"
+  instance_types = ["t3.small"]
 
   scaling_config {
     desired_size = 1
@@ -18,7 +18,7 @@ resource "aws_eks_node_group" "private_node_group" {
 
   # Allow external changes without Terraform plan difference
   lifecycle {
-    ignore_changes = [ scaling_config[0].desired_size ]
+    ignore_changes = [scaling_config[0].desired_size]
   }
 
   update_config {

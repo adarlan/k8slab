@@ -6,7 +6,7 @@ module "kind-cluster" {
 
 module "ingress-nginx" {
   source = "./../../ingress-nginx/kind-ingress-nginx"
-  
+
   depends_on = [
     module.kind-cluster
   ]
@@ -14,7 +14,7 @@ module "ingress-nginx" {
 
 module "argo-cd" {
   source = "./../../argo-cd"
-  
+
   depends_on = [
     module.kind-cluster,
     module.ingress-nginx

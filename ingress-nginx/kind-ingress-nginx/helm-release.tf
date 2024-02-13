@@ -3,13 +3,13 @@ resource "helm_release" "kind_nginx_ingress_controller" {
   name = "ingress-nginx"
 
   repository = "https://kubernetes.github.io/ingress-nginx"
-  chart = "ingress-nginx"
-  version = "4.7.1"
+  chart      = "ingress-nginx"
+  version    = "4.7.1"
 
-  namespace = "ingress-nginx"
+  namespace        = "ingress-nginx"
   create_namespace = true
 
-  values = [ file("${path.module}/helm-values.yaml") ]
+  values = [file("${path.module}/helm-values.yaml")]
 }
 
 resource "null_resource" "wait_for_ingress_nginx" {
@@ -27,5 +27,5 @@ resource "null_resource" "wait_for_ingress_nginx" {
     EOF
   }
 
-  depends_on = [ helm_release.kind_nginx_ingress_controller ]
+  depends_on = [helm_release.kind_nginx_ingress_controller]
 }

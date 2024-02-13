@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     helm = { # Not used directly by this module, but configuration is required
-      source  = "hashicorp/helm"
+      source = "hashicorp/helm"
       # version = "2.12.1"
     }
 
@@ -16,7 +16,7 @@ terraform {
     # }
 
     null = { # Used directly by this module
-      source = "hashicorp/null"
+      source  = "hashicorp/null"
       version = "3.2.2"
     }
   }
