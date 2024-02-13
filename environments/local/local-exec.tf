@@ -19,8 +19,8 @@ resource "null_resource" "local_exec" {
   # TODO must wait for argo-cd is ready. depends_on is not enough
 
   depends_on = [
-    module.kind-cluster,
-    module.ingress-nginx,
-    module.argo-cd,
+    module.kind_cluster,
+    module.ingress_nginx,
+    module.argo_cd,
   ]
 }
