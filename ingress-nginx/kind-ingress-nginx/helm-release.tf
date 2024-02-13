@@ -9,7 +9,7 @@ resource "helm_release" "kind_nginx_ingress_controller" {
   namespace = "ingress-nginx"
   create_namespace = true
 
-  values = [ file("./../kind-nginx-ingress-controller/helm-values.yaml") ]
+  values = [ file("${path.module}/helm-values.yaml") ]
   # TODO use ${path.module}?
 }
 
