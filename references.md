@@ -1,14 +1,27 @@
+# References
 
-## TODO
+Argo CD Helm Chart Documentation
+https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
+Argo CD Ingress Configuration
+https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/
+
+Automate deletion of AWS resources by using aws-nuke
+https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/automate-deletion-of-aws-resources-by-using-aws-nuke.html
+
+Deploy and Access the Kubernetes Dashboard
+https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
+
+Horizontal Pod Autoscaling
+https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+
+NGINX Ingress Annotations
+https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+
+##
 
 App manifests > ingress rules
 how to make host as a parameter? helm values? Can argocd set this?
-
-Argo CD ingress configuration
-https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/
-
-argo cd chart documentation
-https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
 
 https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
 
@@ -17,13 +30,6 @@ https://nickjanetakis.com/blog/configuring-a-kind-cluster-with-nginx-ingress-usi
 terraform destroy... if the cluster is broken, terraform can not remove the helm releases
 and terraform will not destroy the cluster before removing the helm releases
 the cluster provisioning should be separate
-
-kubernetes dashboard
-
-aws nuke
-
-Horizontal Pod Autoscaling
-https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 
 https://codefresh.io/blog/argo-cd-best-practices/
 

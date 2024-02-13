@@ -22,8 +22,8 @@ Install manually:
 - __Terraform__ | https://developer.hashicorp.com/terraform/install
 - __Docker Engine__ | https://docs.docker.com/engine/install/
 - __Kubectl__ | https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
-- __Argo CD CLI__ | https://argo-cd.readthedocs.io/en/stable/cli_installation/
 - __Helm__ | https://helm.sh/docs/intro/install/
+- __Argo CD CLI__ | https://argo-cd.readthedocs.io/en/stable/cli_installation/
 
 Install using Ansible:
 
@@ -36,8 +36,8 @@ ansible-playbook local-setup-requirements/ansible-playbook.yaml
 ### 1. Create the cluster in your local environment
 
 ```shell
-terraform -chdir=local-environment init
-terraform -chdir=local-environment apply -auto-approve
+terraform -chdir=environments/local init
+terraform -chdir=environments/local apply -auto-approve
 ```
 
 <!-- TODO Manage your cluster with `kubectl`, `helm` and `argocd` -->
@@ -61,7 +61,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 ### 5. Destroy the cluster
 
 ```shell
-terraform -chdir=local-environment destroy -auto-approve
+terraform -chdir=environments/local destroy -auto-approve
 ```
 
 ## Contributing
