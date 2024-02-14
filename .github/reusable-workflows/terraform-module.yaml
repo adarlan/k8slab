@@ -1,0 +1,49 @@
+name: Terraform Module CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      module_name:
+        description: The name of the Terraform module
+        type: string
+        required: true
+      context_path:
+        description: The path of the Terraform module within the repository
+        type: string
+        default: "."
+
+jobs:
+
+  test:
+    name: Test Terraform Module
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: setup-terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.3
+      - name: fmt-check
+        run: terraform -chdir=${{inputs.context_path}} fmt -check -recursive -diff
+      - name: init
+        run: terraform -chdir=${{inputs.context_path}} init -input=false -backend=false
+      - name: validate
+        run: terraform -chdir=${{inputs.context_path}} validate
+
+  # publish:
+  #   name: Publish Terraform Module to GitHub Registry
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v2
+  #     - name: setup-python
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: '3.x'
+  #     - name: install-ghcr-tools
+  #       run: pip install ghcr-tools
+  #     - name: publish
+  #       run: ghcr publish -r <OWNER>/<REPOSITORY> -n <MODULE_NAME> -v <VERSION> -p . -y
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
