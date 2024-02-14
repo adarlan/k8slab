@@ -1,0 +1,16 @@
+name: EKS Cluster Terraform Module
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  terraform-module:
+    uses: adarlan/k8slab/.github/reusable-workflows/terraform-module.yaml@master
+    with:
+      module_name: eks-cluster
+      context_path: kubernetes-cluster/eks-cluster
