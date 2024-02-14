@@ -9,7 +9,7 @@ A collection of IaC modules, CI/CD workflows, and other utilities designed to si
 - Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows
 - [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/) for managing incoming traffic to the cluster
 - [Karpenter](https://karpenter.sh/) for automatic node scaling based on resource usage
-- Monitoring and alerting with [Prometheus](https://prometheus.io/)
+- Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/)
 - Package management with [Helm](https://helm.sh/) for deploying Kubernetes rousources
 - Infrastructure provisioning with [Terraform](https://www.terraform.io/)
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions)
@@ -56,23 +56,69 @@ terraform apply
 This will create a local Kubernetes cluster,
 properly configured with essential tools such as Argo CD, NGINX Ingress, Prometheus, and more.
 
-### 4. Manage your cluster from command line and browser
+### 4. Manage your cluster from the command line
 
-This script configures your `kubectl`, `helm`, and `argocd` CLIs,
-allowing you to manage your cluster directly from the command line.
+Run these scripts to configure your `kubectl`, `helm`, and `argocd` CLIs.
 
 ```bash
-./login.sh
+./kubectl-config.sh
+./argocd-login.sh
 ```
 
-Additionally, it will output the Argo CD username and password,
-enabling access to the Argo CD dashboard in your browser.
+Now you can manage your cluster directly from the command line.
 
-<!-- TODO Argo CD dashboard screenshot -->
+```txt
+$ kubectl get nodes
+NAME                STATUS   ROLES           AGE     VERSION
+foo-control-plane   Ready    control-plane   6m25s   v1.29.1
+foo-worker          Ready    <none>          5m51s   v1.29.1
+foo-worker2         Ready    <none>          5m47s   v1.29.1
+foo-worker3         Ready    <none>          5m48s   v1.29.1
+```
 
-<!-- TODO Add links for tools and apps -->
+```txt
+$ helm list --all-namespaces
+NAME                    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                           APP VERSION
+argocd                  argocd          1               2024-02-14 18:01:10.60420689 -0300 -03  deployed        argo-cd-5.27.3                  v2.6.7     
+ingress-nginx           ingress-nginx   1               2024-02-14 18:01:08.495705532 -0300 -03 deployed        ingress-nginx-4.7.1             1.8.1      
+kube-prometheus-stack   monitoring      1               2024-02-14 18:01:21.313276179 -0300 -03 deployed        kube-prometheus-stack-56.6.2    v0.71.2    
+```
 
-### 5. Destroy your cluster
+```txt
+$ argocd app list
+NAME                CLUSTER                         NAMESPACE    PROJECT  STATUS  HEALTH   SYNCPOLICY  CONDITIONS  REPO                                   PATH                       TARGET
+argocd/hello-world  https://kubernetes.default.svc  hello-world  default  Synced  Healthy  Auto-Prune  <none>      https://github.com/adarlan/k8slab.git  app-manifests/hello-world  HEAD
+```
+
+### 5. Manage your cluster from your browser
+
+This script outputs some URLs, usernames and passwords,
+enabling access to Argo CD, Prometheus, Grafana, and other essential tools in your browser.
+
+```bash
+./show-credentials.sh
+```
+
+```txt
+$ ./show-credentials.sh 
+
+Argo CD
+https://localhost:8020
+Username admin
+Password bgNmREbMTg6paKRX
+
+Prometheus
+http://localhost:8030
+
+Grafana
+http://localhost:8031
+Username admin
+Password prom-operator
+```
+
+<!-- TODO add screenshots -->
+
+### 6. Destroy your cluster
 
 Once you've finished exploring and experimenting with your local Kubernetes environment,
 it's important to clean up resources.

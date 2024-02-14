@@ -12,6 +12,9 @@ https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/automate-delet
 Deploy and Access the Kubernetes Dashboard
 https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
 
+GitHub Actions Best Practices
+https://exercism.org/docs/building/github/gha-best-practices
+
 Horizontal Pod Autoscaling
 https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 
