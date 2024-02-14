@@ -1,3 +1,6 @@
+# Configuration reference
+# https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
 config:
   params:
     server.insecure: true
@@ -5,3 +8,5 @@ config:
 server:
   service:
     type: NodePort
+    nodePortHttp: ${node_port_http}
+    nodePortHttps: ${node_port_https}

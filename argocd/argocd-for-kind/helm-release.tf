@@ -8,5 +8,8 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
 
-  values = [ templatefile("${path.module}/helm-values.yaml", {}) ]
+  values = [ templatefile("${path.module}/helm-values.yaml", {
+    node_port_http  = var.node_port_http,
+    node_port_https = var.node_port_https
+  }) ]
 }
