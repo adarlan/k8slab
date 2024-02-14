@@ -1,0 +1,28 @@
+name: EKS Terraform Module
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  test:
+    name: Test Terraform Module
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: setup-terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.3
+      - name: fmt-check
+        run: terraform -chdir=kubernetes-cluster/eks-cluster/ fmt -check -recursive -diff
+      - name: init
+        run: terraform -chdir=kubernetes-cluster/eks-cluster/ init -input=false -backend=false
+      - name: validate
+        run: terraform -chdir=kubernetes-cluster/eks-cluster/ validate
