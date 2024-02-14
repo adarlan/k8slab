@@ -10,7 +10,7 @@ on:
 
 jobs:
   terraform-module:
-    uses: adarlan/k8slab/.github/reusable-workflows/.terraform-module.yaml@master
+    uses: adarlan/k8slab/.github/workflows/.terraform-module.yaml@master
     with:
       module_name: eks-cluster
       context_path: kubernetes-cluster/eks-cluster
