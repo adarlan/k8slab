@@ -13,6 +13,13 @@ provider "helm" {
 module "kind_cluster" {
   source       = "./../../kubernetes-cluster/kind-cluster"
   cluster_name = "foo"
+
+  node_to_host_port_mapping = {
+    "30${var.port_suffixes.argocd_http}"  = "8${var.port_suffixes.argocd_http}"
+    "30${var.port_suffixes.argocd_https}" = "8${var.port_suffixes.argocd_https}"
+    "30${var.port_suffixes.prometheus}"   = "8${var.port_suffixes.prometheus}"
+    "30${var.port_suffixes.grafana}"      = "8${var.port_suffixes.grafana}"
+  }
 }
 
 module "ingress_nginx" {
@@ -23,18 +30,15 @@ module "ingress_nginx" {
 module "argocd" {
   source     = "./../../argocd/argocd-for-kind"
   depends_on = [module.kind_cluster]
+
+  node_port_http  = "30${var.port_suffixes.argocd_http}"
+  node_port_https = "30${var.port_suffixes.argocd_https}"
 }
 
-# module "kube_prometheus" {
-#   source                 = "./../../kube-prometheus"
-#   host                   = module.kind_cluster.endpoint
-#   cluster_ca_certificate = module.kind_cluster.cluster_ca_certificate
-#   client_certificate     = module.kind_cluster.client_certificate
-#   client_key             = module.kind_cluster.client_key
-# }
+module "kube_prometheus" {
+  source     = "./../../kube-prometheus"
+  depends_on = [module.kind_cluster]
 
-# resource "null_resource" "login" {
-#   triggers = { key = uuid() }
-#   provisioner "local-exec" { command = file("./login.sh") }
-#   depends_on = [module.argocd_apps]
-# }
+  prometheus_node_port = "30${var.port_suffixes.prometheus}"
+  grafana_node_port    = "30${var.port_suffixes.grafana}"
+}
