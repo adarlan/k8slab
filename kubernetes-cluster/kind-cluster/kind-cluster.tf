@@ -19,7 +19,7 @@ resource "kind_cluster" "default" {
         "kind: InitConfiguration\nnodeRegistration:\n  kubeletExtraArgs:\n    node-labels: \"ingress-ready=true\"\n"
       ]
 
-      # ingress-nginx
+      # ingress
       extra_port_mappings {
         container_port = 80
         host_port      = 80
@@ -29,14 +29,12 @@ resource "kind_cluster" "default" {
         host_port      = 443
       }
 
-      # argocd-server
-      extra_port_mappings {
-        container_port = 30080
-        host_port      = 8080
-      }
-      extra_port_mappings {
-        container_port = 30443
-        host_port      = 8443
+      dynamic "extra_port_mappings" {
+        for_each = var.node_to_host_port_mapping
+        content {
+          container_port = tonumber(extra_port_mappings.key)
+          host_port      = tonumber(extra_port_mappings.value)
+        }
       }
     }
 
