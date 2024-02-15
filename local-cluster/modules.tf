@@ -11,7 +11,7 @@ provider "helm" {
 }
 
 module "kind_cluster" {
-  source       = "./../../kubernetes-cluster/kind-cluster"
+  source       = "./kind-cluster"
   cluster_name = "foo"
 
   node_to_host_port_mapping = {
@@ -23,12 +23,12 @@ module "kind_cluster" {
 }
 
 module "ingress_nginx" {
-  source     = "./../../ingress-nginx/ingress-nginx-for-kind"
+  source     = "./ingress-nginx-for-kind"
   depends_on = [module.kind_cluster]
 }
 
 module "argocd" {
-  source     = "./../../argocd/argocd-for-kind"
+  source     = "./argocd-for-kind"
   depends_on = [module.kind_cluster]
 
   node_port_http  = "30${var.port_suffixes.argocd_http}"
@@ -36,7 +36,7 @@ module "argocd" {
 }
 
 module "kube_prometheus" {
-  source     = "./../../kube-prometheus"
+  source     = "./kube-prometheus-for-kind"
   depends_on = [module.kind_cluster]
 
   prometheus_node_port = "30${var.port_suffixes.prometheus}"
