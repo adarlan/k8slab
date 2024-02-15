@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - master
-    paths:
-      - python-app
-      - .github/workflows
+    # paths:
+    #   - python-app
+    #   - .github/workflows
 
 jobs:
   build_and_push:
