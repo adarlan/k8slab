@@ -3,10 +3,10 @@ name: Python App
 on:
   push:
     branches:
-      - master
-    # paths:
-    #   - python-app
-    #   - .github/workflows
+      - 'master'
+    paths:
+      - 'python-app/**'
+      - '.github/workflows/**'
 
 jobs:
   build_and_push:
