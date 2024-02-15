@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hello-world
+spec:
+  selector:
+    matchLabels:
+      app: hello-world # the service monitor will select the service with this label
+  endpoints:
+  - port: web # the service monitor will collect metrics by scraping the '/metrics' path on this port of the service
+
+  # - interval: 10s
+  #   port: http
+  # - interval: 10s
+  #   port: http-back

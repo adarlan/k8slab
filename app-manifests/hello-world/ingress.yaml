@@ -16,7 +16,7 @@ spec:
           service:
             name: hello-world
             port: 
-              number: 80
+              number: 80 # TODO can I use port name?
   - host: hello-world.localhost
     http:
       paths:

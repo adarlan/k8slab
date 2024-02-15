@@ -6,17 +6,18 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: nginx
+      app: hello-world
   template:
     metadata:
       labels:
-        app: nginx
+        app: hello-world
     spec:
       containers:
       - name: nginx
         image: nginx
         ports:
-        - containerPort: 80
+        - name: web
+          containerPort: 80
         resources:
           requests:
             memory: 100Mi
@@ -26,14 +27,18 @@ spec:
             cpu: 150m
         livenessProbe:
           httpGet:
-            port: 80
+            port: 80 # TODO can I reference the container port name here?
             path: /
           initialDelaySeconds: 30
           periodSeconds: 10
         volumeMounts:
-        - mountPath: /usr/share/nginx/html
-          name: html-files
+        - mountPath: /usr/share/nginx/html/index.html
+          name: config-files
+          subPath: index.html
+        - mountPath: /etc/nginx/nginx.conf
+          name: config-files
+          subPath: nginx.conf
       volumes:
-      - name: html-files
+      - name: config-files
         configMap:
-          name: html-files
+          name: hello-world

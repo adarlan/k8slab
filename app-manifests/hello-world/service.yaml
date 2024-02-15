@@ -2,10 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hello-world
+  labels:
+    app: hello-world # the service monitor will use it to select this service
 spec:
   selector:
-    app: nginx
+    app: hello-world # selecting the pods with this label
   ports:
-  - protocol: TCP
+  - name: web
     port: 80
-    targetPort: 80
+    protocol: TCP
+    targetPort: web
