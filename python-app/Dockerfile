@@ -6,7 +6,7 @@ EXPOSE 80
 EXPOSE 8000
 
 COPY requirements.txt /app
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py /app
 CMD [ "python", "app.py" ]
