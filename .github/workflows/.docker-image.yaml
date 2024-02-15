@@ -1,0 +1,56 @@
+on:
+  workflow_call:
+    inputs:
+
+      full_image_name:
+        description: The complete name of the Docker image, including the repository, image name, and tag
+        type: string
+        required: true
+
+      build_context:
+        description: The build context directory used by Docker during the image build process
+        type: string
+        default: "."
+
+jobs:
+  scan:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Docker build
+        working-directory: ${{ inputs.build_context }}
+        run: docker build -t temp-image .
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'temp-image'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  build_and_push:
+    name: Build and push the Docker image
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker image
+        working-directory: ${{ inputs.build_context }}
+        run: docker build -t ${{ inputs.full_image_name }} .
+
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ inputs.full_image_name }}

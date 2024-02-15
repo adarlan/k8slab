@@ -9,22 +9,9 @@ on:
       - '.github/workflows/**'
 
 jobs:
-  build_and_push:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-    - name: Build Docker image
-      working-directory: python-app
-      run: docker build -t adarlan/python-app:latest .
-
-    - name: Push Docker image to Docker Hub
-      run: docker push adarlan/python-app:latest
+  docker-image:
+    name: Python App Docker Image
+    uses: .github/workflows/.docker-image.yaml
+    with:
+      full_image_name: adarlan/python-app:latest
+      build_context: python-app
