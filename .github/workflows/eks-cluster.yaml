@@ -4,18 +4,18 @@ on:
       - master
     paths:
       - kubernetes-cluster/eks-cluster
-      - .github/workflows/reusable/terraform-module.yaml
+      - .github/workflows/.terraform-module.yaml
       - .github/workflows/eks-cluster.yaml
   pull_request:
     branches:
       - master
     paths:
       - kubernetes-cluster/eks-cluster
-      - .github/workflows/reusable/terraform-module.yaml
+      - .github/workflows/.terraform-module.yaml
       - .github/workflows/eks-cluster.yaml
 
 jobs:
   eks-cluster:
-    uses: adarlan/k8slab/.github/workflows/reusable/terraform-module.yaml@master
+    uses: adarlan/k8slab/.github/workflows/.terraform-module.yaml@master
     with:
       context_path: kubernetes-cluster/eks-cluster
