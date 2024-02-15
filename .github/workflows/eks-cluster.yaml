@@ -1,0 +1,17 @@
+on:
+  push:
+    branches:
+      - ${{ github.event.repository.default_branch }}
+    paths:
+      - kubernetes-cluster/eks-cluster
+  pull_request:
+    branches:
+      - ${{ github.event.repository.default_branch }}
+    paths:
+      - kubernetes-cluster/eks-cluster
+
+jobs:
+  eks-cluster:
+    uses: adarlan/k8slab/.github/workflows/.terraform-module.yaml@master
+    with:
+      context_path: kubernetes-cluster/eks-cluster
