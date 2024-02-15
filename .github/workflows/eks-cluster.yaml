@@ -4,11 +4,15 @@ on:
       - ${{ github.event.repository.default_branch }}
     paths:
       - kubernetes-cluster/eks-cluster
+      - .github/workflows/.terraform-module.yaml
+      - .github/workflows/eks-cluster.yaml
   pull_request:
     branches:
       - ${{ github.event.repository.default_branch }}
     paths:
       - kubernetes-cluster/eks-cluster
+      - .github/workflows/.terraform-module.yaml
+      - .github/workflows/eks-cluster.yaml
 
 jobs:
   eks-cluster:
