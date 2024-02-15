@@ -10,7 +10,7 @@ REQUEST_LATENCY = prometheus_client.Summary('request_latency_seconds', 'Request 
 
 @app.route('/')
 @REQUEST_LATENCY.time()
-def hello():
+def handle_request():
     random_sleep_time = random.uniform(0.1, 0.9)
     time.sleep(random_sleep_time)
     return f'Hello, this is a simple Python application! Random sleep time: {random_sleep_time:.2f} seconds.'
