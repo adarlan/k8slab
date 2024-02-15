@@ -15,3 +15,6 @@ jobs:
     with:
       full_image_name: adarlan/python-app:latest
       build_context: python-app
+    secrets:
+      dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}

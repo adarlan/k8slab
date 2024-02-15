@@ -11,6 +11,12 @@ on:
         description: The build context directory used by Docker during the image build process
         type: string
         default: "."
+    
+    secrets:
+      dockerhub_username:
+        required: true
+      dockerhub_password:
+        required: true
 
 jobs:
   scan:
@@ -33,7 +39,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL'
-          # severity: 'CRITICAL,HIGH'
+          # TODO severity: 'CRITICAL,HIGH'
 
   build_and_push:
     name: Build and push the Docker image
@@ -46,8 +52,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ secrets.dockerhub_username }}
+          password: ${{ secrets.dockerhub_password }}
 
       - name: Build Docker image
         working-directory: ${{ inputs.build_context }}
