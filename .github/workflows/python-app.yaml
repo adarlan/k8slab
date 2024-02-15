@@ -11,7 +11,7 @@ on:
 jobs:
   docker-image:
     name: Python App Docker Image
-    uses: .github/workflows/.docker-image.yaml
+    uses: adarlan/k8slab/.github/workflows/.docker-image.yaml@master
     with:
       full_image_name: adarlan/python-app:latest
       build_context: python-app
