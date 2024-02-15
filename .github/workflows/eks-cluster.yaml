@@ -1,7 +1,8 @@
 on:
   push:
     branches:
-      - ${{ github.event.repository.default_branch }}
+      - master
+      # - ${{ github.event.repository.default_branch }}
     # paths:
     #   - kubernetes-cluster/eks-cluster
     #   - .github/workflows/.terraform-module.yaml
