@@ -1,5 +1,6 @@
-resource "helm_release" "kube_prometheus" {
-  name = "kube-prometheus-stack"
+resource "helm_release" "kube_prometheus_stack" {
+  name    = "kube-prometheus-stack"
+  timeout = "600"
 
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
