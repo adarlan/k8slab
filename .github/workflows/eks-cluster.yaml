@@ -1,21 +1,23 @@
+name: EKS Cluster (Terraform Module)
+
 on:
   push:
     branches:
-      - master
+      - '**'
     paths:
-      - eks-cluster
-      - .github/workflows/.terraform-module.yaml
-      - .github/workflows/eks-cluster.yaml
+      - 'eks-cluster/**'
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches:
-      - master
+      - 'master'
     paths:
-      - eks-cluster
-      - .github/workflows/.terraform-module.yaml
-      - .github/workflows/eks-cluster.yaml
+      - 'eks-cluster/**'
+  workflow_dispatch:
 
 jobs:
-  eks-cluster:
-    uses: adarlan/k8slab/.github/workflows/.terraform-module.yaml@master
+  terraform-module-test:
+    name: Terraform Module Test
+    uses: ./.github/workflows/.terraform-module-test.yaml
     with:
       context_path: eks-cluster
