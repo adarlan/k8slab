@@ -1,12 +1,10 @@
-
 resource "kind_cluster" "default" {
   name       = var.cluster_name
   node_image = "kindest/node:v${var.kubernetes_version}"
 
   wait_for_ready = true
 
-  kubeconfig_path = pathexpand("./kubeconfig")
-  # This file will be created in the directory where 'terraform apply' is executed, not within this module's directory
+  kubeconfig_path = local.kubeconfig_path
 
   kind_config {
     kind        = "Cluster"
