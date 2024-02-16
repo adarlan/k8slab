@@ -42,3 +42,8 @@ module "kube_prometheus" {
   prometheus_node_port = "30${var.port_suffixes.prometheus}"
   grafana_node_port    = "30${var.port_suffixes.grafana}"
 }
+
+module "trivy_operator" {
+  source     = "./trivy-operator-for-kind"
+  depends_on = [module.kind_cluster]
+}
