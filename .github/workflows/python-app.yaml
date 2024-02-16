@@ -7,7 +7,7 @@ on:
     paths:
       - 'python-app/**'
     tags:
-      - '**'
+      - 'v*.*.*'
   pull_request:
     branches:
       - 'master'
@@ -25,11 +25,10 @@ jobs:
   docker-image-push:
     name: Docker Image Push
     needs: docker-image-test
-    if: startsWith(github.ref, 'refs/tags/v') && github.ref =~ '^refs/tags/v\\.\d+\.\\d+\.\\d+$'
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
       build_context: python-app
-      full_image_name: adarlan/python-app:latest
+      full_image_name: adarlan/python-app:${{ vars.GITHUB_REF_NAME }}
     secrets:
       dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
