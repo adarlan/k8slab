@@ -3,18 +3,33 @@ name: Python App
 on:
   push:
     branches:
+      - '**'
+    paths:
+      - 'python-app/**'
+    tags:
+      - '**'
+  pull_request:
+    branches:
       - 'master'
-    # paths:
-    #   - 'python-app/**'
-    #   - '.github/workflows/**'
+    paths:
+      - 'python-app/**'
+  workflow_dispatch:
 
 jobs:
-  docker-image:
-    name: Python App Docker Image
-    uses: adarlan/k8slab/.github/workflows/.docker-image.yaml@master
+  docker-image-test:
+    name: Docker Image Test
+    uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      full_image_name: adarlan/python-app:latest
       build_context: python-app
+
+  docker-image-push:
+    name: Docker Image Push
+    needs: docker-image-test
+    if: startsWith(github.ref, 'refs/tags/v') && github.ref =~ '^refs/tags/v\\.\d+\.\\d+\.\\d+$'
+    uses: ./.github/workflows/.docker-image-push.yaml
+    with:
+      build_context: python-app
+      full_image_name: adarlan/python-app:latest
     secrets:
       dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
