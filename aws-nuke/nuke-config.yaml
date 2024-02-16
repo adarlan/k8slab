@@ -1,0 +1,28 @@
+# https://github.com/rebuy-de/aws-nuke
+
+# aws-nuke -c aws-nuke/nuke-config.yaml --access-key-id $AWS_ACCESS_KEY_ID --secret-access-key $AWS_SECRET_ACCESS_KEY --no-dry-run
+
+regions:
+- eu-west-1
+- global
+
+account-blocklist:
+- "999999999999" # production
+
+accounts:
+  "${AWS_ACCOUNT_ID}":
+    filters:
+      IAMUser:
+      - "my-user"
+      IAMUserPolicyAttachment:
+      - "my-user -> AdministratorAccess"
+      IAMUserAccessKey:
+      - property: UserName
+        value: "admin"
+
+resource-types:
+  # see the full list: aws-nuke resource-types
+  targets:
+  - S3Object
+  - S3Bucket
+  - IAMRole
