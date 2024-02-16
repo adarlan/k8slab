@@ -3,11 +3,12 @@ set -e
 
 printf "\nConfiguring kubectl\n"
 cp ./kubeconfig ~/.kube/config
-# TODO merge and use context instead of replacing
 
 kubectl cluster-info
 
 exit 0
+
+# TODO use kubectl config instead of copy
 
 CLUSTER_NAME = $(terraform output -raw cluster_name)
 CLUSTER_ENDPOINT = $(terraform output -raw cluster_endpoint)
