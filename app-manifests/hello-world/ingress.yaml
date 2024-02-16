@@ -22,6 +22,7 @@ spec:
       paths:
       - pathType: Prefix
         path: /
+        # TODO the path is being completely ignored
         backend:
           service:
             name: hello-world
