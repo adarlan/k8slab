@@ -16,10 +16,10 @@ def handle_request():
     return f'Random sleep time: {random_sleep_time:.2f} seconds.'
 
 if __name__ == "__main__":
+    print("Starting app...")
+    print("Ports:")
+    print("- App: 80")
+    print("- Metrics: 8000")
+
     prometheus_client.start_http_server(8000)
     waitress.serve(app, host="0.0.0.0", port=80)
-
-# TODO expose port 8888 for /alive /started and /ready
-# the probes must check the dependencies of the application, such as databases and APIs
-
-# TODO Add error handling, logging, and other metrics to monitor the health and performance of the application
