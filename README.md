@@ -14,7 +14,7 @@ A collection of IaC modules, CI/CD workflows, and other utilities designed to si
 - Infrastructure provisioning with [Terraform](https://www.terraform.io/)
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions)
 - [Docker](https://www.docker.com/) for containerization of applications
-- [Ansible](https://www.ansible.com/) for local environment configuration
+<!-- - [Ansible](https://www.ansible.com/) for local environment configuration -->
 
 ## Requirements
 
@@ -28,7 +28,7 @@ To explore and experiment with your local Kubernetes environment, ensure the fol
 
 <!-- TODO You can simplify the installation process using Ansible:
 
-```bash
+```shell
 ansible-playbook requirements/ansible-playbook.yaml
 ``` -->
 
@@ -38,30 +38,33 @@ Get up and running with a local Kubernetes cluster preconfigured with essential 
 
 ### 1. Clone this repository
 
-```bash
+```shell
 git clone https://github.com/adarlan/k8slab.git
 ```
 
 ### 2. Navigate to the local-cluster directory inside the repository
 
-```bash
+```shell
 cd k8slab/local-cluster
 ```
 
 ### 3. Create the local Kubernetes cluster with Terraform
 
 ```shell
-./terraform-apply.sh
+terraform init
+terraform apply -parallelism=1
 ```
 
 This will create a Kind (Kubernetes-in-Docker) cluster in your local environment.
-Additionally, it installs essential Helm charts including Argo-CD, Ingress-NGINX, and Kube-Prometheus-Stack into the cluster.
+Additionally, it installs essential Helm charts including `argo-cd`, `ingress-nginx`, `kube-prometheus-stack`, and `trivy-operator` into the cluster.
 
 ### 4. Configure kubectl to access your cluster
 
-```bash
-./kubectl-config.sh
+```shell
+cp k8slab.kubeconfig ~/.kube/config
 ```
+
+<!-- TODO merge instead of copy -->
 
 Now you can use `kubectl` to manage your cluster directly from the command line.
 
@@ -73,41 +76,43 @@ k8slab-worker          Ready    <none>          5m51s   v1.29.1
 ...
 ```
 
-### 5. Manage your cluster from your browser
+### 5. Manage the cluster from your browser
 
-```bash
-./show-credentials.sh
+```shell
+terraform output login_info
 ```
 
-This script outputs URLs along with corresponding usernames and passwords.
+This command outputs URLs along with corresponding usernames and passwords.
 
-```txt
-Argo CD
-https://localhost:8020
-Username admin
-Password ****
-
-Grafana
-http://localhost:8031
-Username admin
-Password ****
-
-Prometheus
-http://localhost:8030
-...
+```json
+{
+  "argocd" = {
+    "password" = "****"
+    "url" = "https://localhost:8020"
+    "username" = "admin"
+  }
+  "grafana" = {
+    "password" = "prom-operator"
+    "url" = "http://localhost:8031"
+    "username" = "admin"
+  }
+  "prometheus" = {
+    "url" = "http://localhost:8030"
+  }
+}
 ```
 
 Now you have access to insightful dashboards for tools like Argo CD, Prometheus, and Grafana,
 accessible directly from your web browser.
 
-<!-- TODO add screenshots -->
+![Dashboards screenshot](./img/dashboards.png)
 
 ### 6. Create the Argo CD applications
 
 Execute the following script to specify the applications that Argo CD should deploy and maintain synchronization within the cluster.
 
-```bash
-./kubectl-apply-argocd-apps.sh
+```shell
+kubectl create -f ../argocd-apps
 ```
 
 <!-- TODO add screenshot -->
@@ -120,7 +125,7 @@ Once you've finished exploring and experimenting with your local Kubernetes envi
 it's important to clean up resources.
 
 ```shell
-./terraform-destroy.sh
+terraform destroy
 ```
 
 <!-- TODO ## Learn more -->
