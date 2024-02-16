@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-ap
+  labels:
+    app: python-app
+spec:
+  selector:
+    app: python-app
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+    targetPort: web
+  - name: metrics
+    port: 8000
+    protocol: TCP
+    targetPort: metrics
