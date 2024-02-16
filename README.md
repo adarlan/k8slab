@@ -14,27 +14,16 @@ A collection of IaC modules, CI/CD workflows, and other utilities designed to si
 - Infrastructure provisioning with [Terraform](https://www.terraform.io/)
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions)
 - [Docker](https://www.docker.com/) for containerization of applications
-<!-- - [Ansible](https://www.ansible.com/) for local environment configuration -->
-
-## Requirements
-
-To explore and experiment with your local Kubernetes environment, ensure the following components are installed:
-
-- __Terraform__ | https://developer.hashicorp.com/terraform/install
-- __Docker Engine__ | https://docs.docker.com/engine/install/
-- __Kubectl__ | https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
-- __Helm__ | https://helm.sh/docs/intro/install/
-- __Argo CD CLI__ | https://argo-cd.readthedocs.io/en/stable/cli_installation/
-
-<!-- TODO You can simplify the installation process using Ansible:
-
-```shell
-ansible-playbook requirements/ansible-playbook.yaml
-``` -->
 
 ## Quick Start
 
 Get up and running with a local Kubernetes cluster preconfigured with essential tools like Argo CD, NGINX Ingress, Prometheus, Grafana, and more, in just a few simple steps.
+
+Requirements:
+
+- __Terraform__ | https://developer.hashicorp.com/terraform/install
+- __Docker Engine__ | https://docs.docker.com/engine/install/
+- __Kubectl__ | https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 
 ### 1. Clone this repository
 
@@ -84,7 +73,7 @@ terraform output login_info
 
 This command outputs URLs along with corresponding usernames and passwords.
 
-```json
+```txt
 {
   "argocd" = {
     "password" = "****"
@@ -92,7 +81,7 @@ This command outputs URLs along with corresponding usernames and passwords.
     "username" = "admin"
   }
   "grafana" = {
-    "password" = "prom-operator"
+    "password" = "****"
     "url" = "http://localhost:8031"
     "username" = "admin"
   }
