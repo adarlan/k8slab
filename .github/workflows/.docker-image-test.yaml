@@ -8,6 +8,7 @@ on:
 
 jobs:
   scan:
+    name: Trivy vulnerability scan
     runs-on: ubuntu-22.04
 
     steps:

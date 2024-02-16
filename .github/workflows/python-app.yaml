@@ -17,18 +17,18 @@ on:
 
 jobs:
   docker-image-test:
-    name: Docker Image Test
+    name: Docker image test
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
       build_context: python-app
 
   docker-image-push:
-    name: Docker Image Push
+    name: Docker image push
     needs: docker-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
       build_context: python-app
-      full_image_name: adarlan/python-app:${{ vars.GITHUB_REF_NAME }}
+      full_image_name: adarlan/python-app:${{ github.ref_name }}
     secrets:
       dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}

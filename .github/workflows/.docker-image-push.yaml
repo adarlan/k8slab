@@ -17,7 +17,7 @@ on:
 
 jobs:
   build_and_push:
-    name: Build and push the Docker image
+    name: Build and push Docker image
     runs-on: ubuntu-22.04
 
     steps:
