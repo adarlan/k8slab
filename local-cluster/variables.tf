@@ -1,3 +1,8 @@
+variable "cluster_name" {
+  type = string
+  default = "k8slab"
+}
+
 variable "port_suffixes" {
   description = "Defines the port suffixes for various cluster services as 3-digit strings. When accessed within the cluster, these services will use '30' as the prefix for node ports, while outside the cluster, they will use '8' as the prefix."
 

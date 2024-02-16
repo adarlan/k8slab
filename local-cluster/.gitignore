@@ -1,8 +1,7 @@
-.terraform/
+.terraform
 .terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.backup
 .terraform.tfstate.lock.info
 
-kubeconfig
-tfplan
+*.kubeconfig
