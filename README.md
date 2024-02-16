@@ -34,98 +34,96 @@ ansible-playbook requirements/ansible-playbook.yaml
 
 ## Quick Start
 
+Get up and running with a local Kubernetes cluster preconfigured with essential tools like Argo CD, NGINX Ingress, Prometheus, Grafana, and more, in just a few simple steps.
+
 ### 1. Clone this repository
 
 ```bash
 git clone https://github.com/adarlan/k8slab.git
 ```
 
-### 2. Navigate to the local environment configuration
+### 2. Navigate to the local-cluster directory inside the repository
 
 ```bash
-cd k8slab/environments/local
+cd k8slab/local-cluster
 ```
 
-### 3. Create a local Kubernetes cluster with Terraform
+### 3. Create the local Kubernetes cluster with Terraform
 
 ```shell
-terraform init
-terraform apply
+./terraform-apply.sh
 ```
 
-This will create a local Kubernetes cluster,
-properly configured with essential tools such as Argo CD, NGINX Ingress, Prometheus, and more.
+This will create a Kind (Kubernetes-in-Docker) cluster in your local environment.
+Additionally, it installs essential Helm charts including Argo-CD, Ingress-NGINX, and Kube-Prometheus-Stack into the cluster.
 
-### 4. Manage your cluster from the command line
-
-Run these scripts to configure your `kubectl`, `helm`, and `argocd` CLIs.
+### 4. Configure kubectl to access your cluster
 
 ```bash
 ./kubectl-config.sh
-./argocd-login.sh
 ```
 
-Now you can manage your cluster directly from the command line.
+Now you can use `kubectl` to manage your cluster directly from the command line.
 
 ```txt
 $ kubectl get nodes
-NAME                STATUS   ROLES           AGE     VERSION
-foo-control-plane   Ready    control-plane   6m25s   v1.29.1
-foo-worker          Ready    <none>          5m51s   v1.29.1
-foo-worker2         Ready    <none>          5m47s   v1.29.1
-foo-worker3         Ready    <none>          5m48s   v1.29.1
-```
-
-```txt
-$ helm list --all-namespaces
-NAME                    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                           APP VERSION
-argocd                  argocd          1               2024-02-14 18:01:10.60420689 -0300 -03  deployed        argo-cd-5.27.3                  v2.6.7     
-ingress-nginx           ingress-nginx   1               2024-02-14 18:01:08.495705532 -0300 -03 deployed        ingress-nginx-4.7.1             1.8.1      
-kube-prometheus-stack   monitoring      1               2024-02-14 18:01:21.313276179 -0300 -03 deployed        kube-prometheus-stack-56.6.2    v0.71.2    
-```
-
-```txt
-$ argocd app list
-NAME                CLUSTER                         NAMESPACE    PROJECT  STATUS  HEALTH   SYNCPOLICY  CONDITIONS  REPO                                   PATH                       TARGET
-argocd/hello-world  https://kubernetes.default.svc  hello-world  default  Synced  Healthy  Auto-Prune  <none>      https://github.com/adarlan/k8slab.git  app-manifests/hello-world  HEAD
+NAME                   STATUS   ROLES           AGE     VERSION
+k8slab-control-plane   Ready    control-plane   6m25s   v1.29.1
+k8slab-worker          Ready    <none>          5m51s   v1.29.1
+...
 ```
 
 ### 5. Manage your cluster from your browser
-
-This script outputs some URLs, usernames and passwords,
-enabling access to Argo CD, Prometheus, Grafana, and other essential tools in your browser.
 
 ```bash
 ./show-credentials.sh
 ```
 
-```txt
-$ ./show-credentials.sh 
+This script outputs URLs along with corresponding usernames and passwords.
 
+```txt
 Argo CD
 https://localhost:8020
 Username admin
-Password bgNmREbMTg6paKRX
-
-Prometheus
-http://localhost:8030
+Password ****
 
 Grafana
 http://localhost:8031
 Username admin
-Password prom-operator
+Password ****
+
+Prometheus
+http://localhost:8030
+...
 ```
+
+Now you have access to insightful dashboards for tools like Argo CD, Prometheus, and Grafana,
+accessible directly from your web browser.
 
 <!-- TODO add screenshots -->
 
-### 6. Destroy your cluster
+### 6. Create the Argo CD applications
+
+Execute the following script to specify the applications that Argo CD should deploy and maintain synchronization within the cluster.
+
+```bash
+./kubectl-apply-argocd-apps.sh
+```
+
+<!-- TODO add screenshot -->
+
+<!-- TODO ### x. Run simulations -->
+
+### 7. Destroy your cluster
 
 Once you've finished exploring and experimenting with your local Kubernetes environment,
 it's important to clean up resources.
 
 ```shell
-terraform destroy
+./terraform-destroy.sh
 ```
+
+<!-- TODO ## Learn more -->
 
 ## Contributing
 
@@ -133,4 +131,4 @@ Contributions are welcome! Feel free to submit issues or pull requests for enhan
 
 ## License
 
-This project is licensed under the [Apache License 2.0](./LICENSE).
+This project is licensed under the [Apache 2.0 License](./LICENSE).
