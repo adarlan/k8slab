@@ -1,20 +1,53 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
+
 metadata:
   name: hello-world
   namespace: argocd
+
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/adarlan/k8slab.git
-    targetRevision: HEAD
-    path: app-manifests/hello-world
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: hello-world
-  syncPolicy:
-    syncOptions:
-    - CreateNamespace=true
-    automated:
-      selfHeal: true
-      prune: true
+  generators:
+  - list:
+      elements:
+      - environment: development
+        namePrefix: "dev-"
+        targetRevision: develop
+        # TODO development of what? the manifest files? should be the images
+        # maybe we can use a different values file to make the manifests use :develop tag on images
+
+      - environment: staging
+        namePrefix: "stg-"
+        targetRevision: master
+
+      - environment: production
+        namePrefix: ""
+        targetRevision: v0.1.0
+
+  template:
+    metadata:
+      name: "{{namePrefix}}hello-world" # argocd app name
+      # namespace: argocd ?
+      # annotations: ???
+      #   argocd.argoproj.io/manifest-generate-paths: ".;.."
+    spec:
+      project: default
+
+      source:
+        repoURL: https://github.com/adarlan/k8slab.git
+        targetRevision: "{{targetRevision}}"
+        path: app-manifests/hello-world
+        helm:
+          releaseName: "{{namePrefix}}hello-world"
+          valueFiles:
+          - values.yaml
+
+      destination:
+        name: in-cluster
+        namespace: "{{namespace}}"
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
