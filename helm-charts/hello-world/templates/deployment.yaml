@@ -1,23 +1,34 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
-  name: hello-world
+  name: {{ .Release.Name }}-hello-world
+
 spec:
-  replicas: 3
   selector:
     matchLabels:
-      app: hello-world
+      app: {{ .Release.Name }}-hello-world
+
+  replicas: 3 # TODO pod auto scaling
+
   template:
     metadata:
       labels:
-        app: hello-world
+        app: {{ .Release.Name }}-hello-world
+
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: "nginx:{{ .Values.nginxImageTag }}"
+
         ports:
         - name: web
           containerPort: 80
+        - name: healthz
+          containerPort: 8080
+        - name: metrics
+          containerPort: 9100
+
         resources:
           requests:
             memory: 100Mi
@@ -25,20 +36,24 @@ spec:
           limits:
             memory: 150Mi
             cpu: 150m
+
         livenessProbe:
           httpGet:
-            port: 80 # TODO can I reference the container port name here?
-            path: /
+            port: healthz
+            path: /healthz
           initialDelaySeconds: 30
           periodSeconds: 10
+
         volumeMounts:
         - mountPath: /usr/share/nginx/html/index.html
           name: config-files
           subPath: index.html
+
         - mountPath: /etc/nginx/nginx.conf
           name: config-files
           subPath: nginx.conf
+
       volumes:
       - name: config-files
         configMap:
-          name: hello-world
+          name: {{ .Release.Name }}-hello-world

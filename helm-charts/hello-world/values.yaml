@@ -1,0 +1,6 @@
+greetingMessage: Hello, World!
+
+nginxImageTag: 1.25-alpine-slim
+
+ingressHost: localhost
+ingressPath: /

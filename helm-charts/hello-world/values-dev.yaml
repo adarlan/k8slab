@@ -1,0 +1,6 @@
+greetingMessage: Hello, Staging Environment!
+
+nginxImageTag: develop
+
+ingressHost: staging.example.com
+ingressPath: /hello

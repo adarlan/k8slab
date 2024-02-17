@@ -1,0 +1,6 @@
+greetingMessage: Hello, Production Environment!
+
+nginxImageTag: 1.25-alpine-slim
+
+ingressHost: hello.example.com
+ingressPath: /

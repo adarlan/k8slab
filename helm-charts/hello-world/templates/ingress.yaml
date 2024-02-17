@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: {{ .Release.Name }}-hello-world
+  labels:
+    app: {{ .Release.Name }}-hello-world
+
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+spec:
+  rules:
+  - host: {{ .Values.ingressHost }}
+    http:
+      paths:
+      {{ if eq .Values.ingressPath "/" }}
+      - pathType: Prefix
+        path: / # TODO the path is being completely ignored
+      {{ else }}
+      - pathType: ImplementationSpecific
+        path: {{ .Values.ingressPath }}(/|$)(.*)
+      {{ end }}
+        backend:
+          service:
+            name: {{ .Release.Name }}-hello-world
+            port:
+              number: 80 # TODO can I use port name?

@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+
+metadata:
+  name: {{ .Release.Name }}-hello-world
+  labels:
+    app: {{ .Release.Name }}-hello-world
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-hello-world
+
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
