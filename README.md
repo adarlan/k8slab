@@ -94,7 +94,7 @@ This command outputs URLs along with corresponding usernames and passwords.
 Now you have access to insightful dashboards for tools like Argo CD, Prometheus, and Grafana,
 accessible directly from your web browser.
 
-![Dashboards screenshot](./img/dashboards.png)
+![Dashboards screenshot](./docs/img/dashboards.png)
 
 ### 6. Create the Argo CD applications
 
