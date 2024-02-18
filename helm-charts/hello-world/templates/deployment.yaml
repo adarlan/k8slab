@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: {{ .Release.Name }}
 
-  replicas: 3 # TODO pod auto scaling
+  replicas: {{ .Values.replicas }}
 
   template:
     metadata:
@@ -21,7 +21,12 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: "nginx:{{ .Values.nginxImageTag }}"
+
+        {{- if eq .Values.environment "development" }}
+        image: docker.io/adarlan/hello-world:develop
+        {{- else }}
+        image: nginx:1.25-alpine-slim
+        {{- end }}
 
         ports:
         - name: web

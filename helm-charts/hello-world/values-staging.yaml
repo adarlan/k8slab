@@ -1,6 +1,0 @@
-greetingMessage: Hello, Staging Environment!
-
-nginxImageTag: 1.25-alpine-slim
-
-ingressHost: staging.example.com
-ingressPath: /hello
