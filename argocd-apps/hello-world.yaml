@@ -10,40 +10,62 @@ spec:
   - list:
       elements:
       - environment: development
-        namePrefix: "dev-"
-        targetRevision: develop
-        # TODO development of what? the manifest files? should be the images
-        # maybe we can use a different values file to make the manifests use :develop tag on images
+        targetRevision: master
+        appName: hello-world-dev
+        destinationCluster: in-cluster
+        destinationNamespace: development
+        greetingMessage: Hello, Development Environment!
+        ingressHost: dev.localhost
+        ingressPath: /hello
+        replicas: "3"
 
       - environment: staging
-        namePrefix: "stg-"
         targetRevision: master
+        appName: hello-world-stg
+        destinationCluster: in-cluster
+        destinationNamespace: staging
+        greetingMessage: Hello, Staging Environment!
+        ingressHost: stg.localhost
+        ingressPath: /hello
+        replicas: "9"
 
       - environment: production
-        namePrefix: ""
-        targetRevision: v0.1.0
+        targetRevision: master
+        appName: hello-world-prd
+        destinationCluster: in-cluster
+        destinationNamespace: production
+        greetingMessage: Hello, Production Environment!
+        ingressHost: hello.localhost
+        ingressPath: /
+        replicas: "36"
 
   template:
     metadata:
-      name: "{{namePrefix}}hello-world" # argocd app name
-      # namespace: argocd ?
-      # annotations: ???
-      #   argocd.argoproj.io/manifest-generate-paths: ".;.."
+      name: "{{appName}}"
+      namespace: argocd
+      labels:
+        app: "{{appName}}"
     spec:
       project: default
 
       source:
         repoURL: https://github.com/adarlan/k8slab.git
+        path: helm-charts/hello-world
         targetRevision: "{{targetRevision}}"
-        path: app-manifests/hello-world
         helm:
-          releaseName: "{{namePrefix}}hello-world"
-          valueFiles:
-          - values.yaml
+          releaseName: "{{appName}}"
+          # valueFiles:
+          # - values-{{profile}}.yaml
+          parameters:
+          - { name: environment,     value: "{{environment}}" }
+          - { name: greetingMessage, value: "{{greetingMessage}}" }
+          - { name: ingressHost,     value: "{{ingressHost}}" }
+          - { name: ingressPath,     value: "{{ingressPath}}" }
+          - { name: replicas,        value: "{{replicas}}" }
 
       destination:
-        name: in-cluster
-        namespace: "{{namespace}}"
+        name: "{{destinationCluster}}"
+        namespace: "{{destinationNamespace}}"
 
       syncPolicy:
         automated:
