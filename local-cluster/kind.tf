@@ -1,5 +1,5 @@
 module "kind_cluster" {
-  source = "./../kind-cluster"
+  source = "./kind"
 
   cluster_name = var.cluster_name
 
