@@ -1,7 +1,7 @@
 
 resource "helm_release" "karpenter_provisioner" {
   name  = "${var.cluster_name}/karpenter-provisioner/helm-release"
-  chart = "./karpenter-provisioner-helm-chart"
+  chart = "${path.module}/helm-chart"
 
   set {
     name  = "clusterName"

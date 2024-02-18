@@ -21,13 +21,3 @@ spec:
       values: [nano, micro, small, large]
   providerRef:
     name: my-provider
----
-apiVersion: karpenter.k8s.aws/v1alpha1
-kind: AWSNodeTemplate
-metadata:
-  name: my-provider
-spec:
-  subnetSelector:
-    kubernetes.io/cluster/{{ .Values.clusterName }}: owned
-  securityGroupSelector:
-    kubernetes.io/cluster/{{ .Values.clusterName }}: owned
