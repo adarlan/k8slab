@@ -1,6 +1,8 @@
 module "ingress_nginx" {
   source     = "./../cluster-tools/ingress-nginx"
   depends_on = [module.kind_cluster]
+
+  profile = "KIND"
 }
 
 module "argo_cd" {
