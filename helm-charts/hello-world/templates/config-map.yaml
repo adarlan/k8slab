@@ -7,33 +7,7 @@ metadata:
     app: {{ .Release.Name }}
 
 data:
-  index.html: <h1>{{ .Values.greetingMessage }}</h1>
-
-  nginx.conf: |
-    events {
-      worker_connections 1024;
-    }
-    http {
-      server {
-        listen 80;
-        location / {
-          root /usr/share/nginx/html;
-          index index.html;
-        }
-      }
-      server {
-        listen 8080;
-        location /healthz {
-            return 200 'OK';
-            add_header Content-Type text/plain;
-            access_log off;
-        }
-      }
-      server {
-        listen 9100;
-        location /metrics {
-            stub_status on;
-            access_log off;
-        }
-      }
-    }
+  index.html: |
+    <h1>
+      {{ .Values.greetingMessage }}
+    </h1>

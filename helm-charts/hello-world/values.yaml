@@ -3,3 +3,8 @@ greetingMessage: Hello, World!
 ingressHost: localhost
 ingressPath: /
 replicas: 1
+
+stableImageTag: master
+
+# unstableImageTag: develop
+unstableImageTag: master

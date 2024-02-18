@@ -23,9 +23,9 @@ spec:
       - name: nginx
 
         {{- if eq .Values.environment "development" }}
-        image: docker.io/adarlan/hello-world:develop
+        image: docker.io/adarlan/hello-world:{{ .Values.unstableImageTag }}
         {{- else }}
-        image: nginx:1.25-alpine-slim
+        image: docker.io/adarlan/hello-world:{{ .Values.stableImageTag }}
         {{- end }}
 
         ports:
@@ -55,10 +55,6 @@ spec:
         - mountPath: /usr/share/nginx/html/index.html
           name: config-files
           subPath: index.html
-
-        - mountPath: /etc/nginx/nginx.conf
-          name: config-files
-          subPath: nginx.conf
 
       volumes:
       - name: config-files
