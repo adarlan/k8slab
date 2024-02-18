@@ -1,18 +1,18 @@
-name: EKS Cluster (Terraform Module)
+name: EKS Cluster Terraform Module
 
 on:
   push:
     branches:
       - '**'
     paths:
-      - 'eks-cluster/**'
+      - 'aws/eks-cluster/**'
     tags:
       - 'v*.*.*'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'eks-cluster/**'
+      - 'aws/eks-cluster/**'
   workflow_dispatch:
 
 jobs:
@@ -20,4 +20,4 @@ jobs:
     name: Terraform Module Test
     uses: ./.github/workflows/.terraform-module-test.yaml
     with:
-      context_path: eks-cluster
+      context_path: aws/eks-cluster

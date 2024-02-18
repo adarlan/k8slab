@@ -1,4 +1,4 @@
-name: Python CRUD
+name: Python CRUD Docker Images
 
 on:
   push:
