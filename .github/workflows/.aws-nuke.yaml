@@ -19,13 +19,13 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: envsubst
-        run: envsubst < aws-nuke/nuke-config.yaml > aws-nuke/nuke-config.yaml
+        run: envsubst < aws/aws-nuke/nuke-config.yaml > aws/aws-nuke/nuke-config.yaml
         env:
           AWS_ACCOUNT_ID: "${{ secrets.AWS_ACCOUNT_ID }}"
       - name: aws-nuke
         uses: docker://quay.io/rebuy/aws-nuke:v2.25.0
         with:
-          args: "--config aws-nuke/nuke-config.yaml --force"
+          args: "--config aws/aws-nuke/nuke-config.yaml --force"
         env:
           AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
@@ -37,13 +37,13 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: envsubst
-        run: envsubst < aws-nuke/nuke-config.yaml > aws-nuke/nuke-config.yaml
+        run: envsubst < aws/aws-nuke/nuke-config.yaml > aws/aws-nuke/nuke-config.yaml
         env:
           AWS_ACCOUNT_ID: "${{ secrets.AWS_ACCOUNT_ID }}"
       - name: aws-nuke
         uses: docker://quay.io/rebuy/aws-nuke:v2.25.0
         with:
-          args: "--config aws-nuke/nuke-config.yaml --force --no-dry-run"
+          args: "--config aws/aws-nuke/nuke-config.yaml --force --no-dry-run"
         env:
           AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
