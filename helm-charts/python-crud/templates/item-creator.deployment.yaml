@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: python-app
+  name: item-creator
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: python-app
+      app: item-creator
   template:
     metadata:
       labels:
-        app: python-app
+        app: item-creator
     spec:
       containers:
-      - name: python-app
-        image: adarlan/python-app:master
+      - name: item-creator
+        image: adarlan/python-crud-item-creator:master
         ports:
         - name: web
           containerPort: 80
         - name: metrics
-          containerPort: 8000
+          containerPort: 9100
         resources:
           requests:
             memory: 100Mi
@@ -29,7 +29,7 @@ spec:
             cpu: 150m
         livenessProbe:
           httpGet:
-            port: web # TODO expose a specific port for healthcheck
-            path: /
+            port: web
+            path: /healthz
           initialDelaySeconds: 30
           periodSeconds: 10

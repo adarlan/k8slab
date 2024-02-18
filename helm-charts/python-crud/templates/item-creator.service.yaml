@@ -1,18 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: python-app
+  name: item-creator
   labels:
-    app: python-app
+    app: item-creator
 spec:
   selector:
-    app: python-app
+    app: item-creator
   ports:
   - name: web
     port: 80
     protocol: TCP
     targetPort: web
   - name: metrics
-    port: 8000
+    port: 9100
     protocol: TCP
     targetPort: metrics
