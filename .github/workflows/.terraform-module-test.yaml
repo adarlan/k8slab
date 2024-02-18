@@ -1,5 +1,3 @@
-name: Terraform Module Test
-
 on:
   workflow_call:
     inputs:
