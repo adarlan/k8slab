@@ -8,8 +8,7 @@ metadata:
 
 spec:
   selector:
-    matchLabels:
-      app: {{ .Release.Name }}
+    app: {{ .Release.Name }}
 
   ports:
   - name: web
