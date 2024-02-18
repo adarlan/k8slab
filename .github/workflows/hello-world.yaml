@@ -1,0 +1,35 @@
+name: Hello World Docker Image
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'apps/hello-world/**'
+    tags:
+      - '**'
+  pull_request:
+    branches:
+      - 'master'
+    paths:
+      - 'apps/hello-world/**'
+  workflow_dispatch:
+
+jobs:
+  image-test:
+    name: Image Test
+    uses: ./.github/workflows/.docker-image-test.yaml
+    with:
+      build_context: apps/hello-world
+
+  image-push:
+    name: Image Push
+    needs:
+      - image-test
+    uses: ./.github/workflows/.docker-image-push.yaml
+    with:
+      build_context: apps/hello-world
+      full_image_name: adarlan/hello-world:${{ github.ref_name }}
+    secrets:
+      dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
