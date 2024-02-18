@@ -97,7 +97,7 @@ k8slab-worker          Ready    <none>          5m51s   v1.29.1
 
 ### 6. Create the Argo CD applications
 
-Execute the following command to deploy the `hello-world` and `python-crud` applications managed by Argo CD.
+Execute the following command to deploy the `hello-world` and `python-crud` applications, with management handled by Argo CD.
 
 ```shell
 kubectl apply -f ../argocd-apps
