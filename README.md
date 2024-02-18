@@ -107,8 +107,6 @@ Open Argo CD in your browser to manage the deployed applications.
 
 ![Argo CD screenshots](./docs/img/argocd-2.png)
 
-![Argo CD screenshots](./docs/img/argocd-5.png)
-
 ### 7. Destroy your cluster
 
 Once you've finished exploring and experimenting with your local Kubernetes environment,
