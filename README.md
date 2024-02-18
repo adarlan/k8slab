@@ -97,15 +97,17 @@ k8slab-worker          Ready    <none>          5m51s   v1.29.1
 
 ### 6. Create the Argo CD applications
 
-Execute the following script to specify the applications that Argo CD should deploy and maintain synchronization within the cluster.
+Execute the following command to deploy the `hello-world` and `python-crud` applications managed by Argo CD.
 
 ```shell
-kubectl create -f ../argocd-apps
+kubectl apply -f ../argocd-apps
 ```
 
 Open Argo CD in your browser to manage the deployed applications.
 
 ![Argo CD screenshots](./docs/img/argocd-2.png)
+
+![Argo CD screenshots](./docs/img/argocd-5.png)
 
 ### 7. Destroy your cluster
 
