@@ -2,9 +2,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 
 metadata:
-  name: {{ .Release.Name }}-hello-world
+  name: {{ .Release.Name }}
   labels:
-    app: {{ .Release.Name }}-hello-world
+    app: {{ .Release.Name }}
 
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
@@ -24,6 +24,6 @@ spec:
       {{ end }}
         backend:
           service:
-            name: {{ .Release.Name }}-hello-world
+            name: {{ .Release.Name }}
             port:
               number: 80 # TODO can I use port name?

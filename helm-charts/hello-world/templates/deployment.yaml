@@ -2,19 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: {{ .Release.Name }}-hello-world
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
 
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-hello-world
+      app: {{ .Release.Name }}
 
   replicas: 3 # TODO pod auto scaling
 
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-hello-world
+        app: {{ .Release.Name }}
 
     spec:
       containers:
@@ -56,4 +58,4 @@ spec:
       volumes:
       - name: config-files
         configMap:
-          name: {{ .Release.Name }}-hello-world
+          name: {{ .Release.Name }}

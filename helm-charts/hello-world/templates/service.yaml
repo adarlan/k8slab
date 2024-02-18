@@ -2,13 +2,14 @@ apiVersion: v1
 kind: Service
 
 metadata:
-  name: {{ .Release.Name }}-hello-world
+  name: {{ .Release.Name }}
   labels:
-    app: {{ .Release.Name }}-hello-world
+    app: {{ .Release.Name }}
 
 spec:
   selector:
-    app: {{ .Release.Name }}-hello-world
+    matchLabels:
+      app: {{ .Release.Name }}
 
   ports:
   - name: web

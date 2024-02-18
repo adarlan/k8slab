@@ -2,14 +2,14 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 
 metadata:
-  name: {{ .Release.Name }}-hello-world
+  name: {{ .Release.Name }}
   labels:
-    app: {{ .Release.Name }}-hello-world
+    app: {{ .Release.Name }}
 
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-hello-world
+      app: {{ .Release.Name }}
 
   endpoints:
   - port: metrics
