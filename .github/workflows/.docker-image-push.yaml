@@ -9,6 +9,9 @@ on:
         description: The build context directory used by Docker during the image build process
         type: string
         default: "."
+      options:
+        type: string
+        default: ''
     secrets:
       dockerhub_username:
         required: true
@@ -32,7 +35,7 @@ jobs:
 
       - name: Build Docker image
         working-directory: ${{ inputs.build_context }}
-        run: docker build -t ${{ inputs.full_image_name }} .
+        run: docker build -t ${{ inputs.full_image_name }} ${{ inputs.options }} .
 
       - name: Push Docker image to Docker Hub
         run: docker push ${{ inputs.full_image_name }}

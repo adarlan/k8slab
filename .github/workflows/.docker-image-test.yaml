@@ -4,7 +4,10 @@ on:
       build_context:
         description: The build context directory used by Docker during the image build process
         type: string
-        default: "."
+        default: '.'
+      options:
+        type: string
+        default: ''
 
 jobs:
   scan:
@@ -17,7 +20,7 @@ jobs:
 
       - name: Docker build
         working-directory: ${{ inputs.build_context }}
-        run: docker build -t temp-image .
+        run: docker build -t temp-image ${{ inputs.options }} .
 
       - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@master

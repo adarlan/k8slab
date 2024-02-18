@@ -1,0 +1,36 @@
+name: Python CRUD
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'python-crud/**'
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - 'master'
+    paths:
+      - 'python-crud/**'
+  workflow_dispatch:
+
+jobs:
+  item-creator-image-test:
+    name: Item Creator image test
+    uses: ./.github/workflows/.docker-image-test.yaml
+    with:
+      build_context: python-crud
+      options: --build-arg APP_NAME=item-creator
+
+  item-creator-image-push:
+    name: Item Creator image push
+    needs: item-creator-image-test
+    uses: ./.github/workflows/.docker-image-push.yaml
+    with:
+      build_context: python-crud
+      options: --build-arg APP_NAME=item-creator
+      full_image_name: adarlan/python-crud-item-creator:${{ github.ref_name }}
+    secrets:
+      dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}

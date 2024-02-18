@@ -1,0 +1,43 @@
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo:7.0
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: default
+
+  item-creator:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: item-creator
+    # volumes:
+    #   - ./item-creator.py:/app/app.py:ro
+    restart: always
+    ports:
+      - 8011:80
+      - 8012:9100
+    environment:
+      MONGO_URI: mongodb://root:example@mongo:27017/
+      MONGO_DATABASE: default
+
+  # item-reader:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile
+  #     args:
+  #       APP_NAME: item-reader
+  #   # volumes:
+  #   #   - ./item-reader.py:/app/app.py:ro
+  #   restart: always
+  #   ports:
+  #     - 8021:80
+  #     - 8022:9100
+  #   environment:
+  #     MONGO_URI: mongodb://root:example@mongo:27017/
+  #     MONGO_DATABASE: default
