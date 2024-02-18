@@ -5,14 +5,14 @@ on:
     branches:
       - '**'
     paths:
-      - 'python-crud/**'
+      - 'apps/python-crud/**'
     tags:
-      - 'v*.*.*'
+      - '**'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'python-crud/**'
+      - 'apps/python-crud/**'
   workflow_dispatch:
 
 jobs:
@@ -20,15 +20,16 @@ jobs:
     name: Item Creator image test
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: python-crud
+      build_context: apps/python-crud
       options: --build-arg APP_NAME=item-creator
 
   item-creator-image-push:
     name: Item Creator image push
-    needs: item-creator-image-test
+    needs:
+      - item-creator-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: python-crud
+      build_context: apps/python-crud
       options: --build-arg APP_NAME=item-creator
       full_image_name: adarlan/python-crud-item-creator:${{ github.ref_name }}
     secrets:
