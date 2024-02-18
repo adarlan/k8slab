@@ -47,31 +47,13 @@ terraform apply -parallelism=1
 This will create a Kind (Kubernetes-in-Docker) cluster in your local environment.
 Additionally, it installs essential Helm charts including `argo-cd`, `ingress-nginx`, `kube-prometheus-stack`, and `trivy-operator` into the cluster.
 
-### 4. Configure kubectl to access your cluster
-
-```shell
-cp k8slab.kubeconfig ~/.kube/config
-```
-
-<!-- TODO merge instead of copy -->
-
-Now you can use `kubectl` to manage your cluster directly from the command line.
-
-```txt
-$ kubectl get nodes
-NAME                   STATUS   ROLES           AGE     VERSION
-k8slab-control-plane   Ready    control-plane   6m25s   v1.29.1
-k8slab-worker          Ready    <none>          5m51s   v1.29.1
-...
-```
-
-### 5. Manage the cluster from your browser
+### 4. Retrieve login information for dashboard access
 
 ```shell
 terraform output login_info
 ```
 
-This command outputs URLs along with corresponding usernames and passwords.
+This command provides URLs, usernames, and passwords required to access dashboards and tools installed on the newly-created cluster.
 
 ```txt
 {
@@ -91,10 +73,27 @@ This command outputs URLs along with corresponding usernames and passwords.
 }
 ```
 
-Now you have access to insightful dashboards for tools like Argo CD, Prometheus, and Grafana,
-accessible directly from your web browser.
+You can use this information to access insightful dashboards for tools like Argo CD, Prometheus, and Grafana directly from your web browser.
 
 ![Dashboards screenshot](./docs/img/dashboards.png)
+
+### 5. Configure kubectl to access your cluster
+
+```shell
+cp k8slab.kubeconfig ~/.kube/config
+```
+
+<!-- TODO merge instead of copy -->
+
+Now you can use `kubectl` to manage your cluster directly from the command line.
+
+```txt
+$ kubectl get nodes
+NAME                   STATUS   ROLES           AGE     VERSION
+k8slab-control-plane   Ready    control-plane   6m25s   v1.29.1
+k8slab-worker          Ready    <none>          5m51s   v1.29.1
+...
+```
 
 ### 6. Create the Argo CD applications
 
@@ -104,9 +103,9 @@ Execute the following script to specify the applications that Argo CD should dep
 kubectl create -f ../argocd-apps
 ```
 
-<!-- TODO add screenshot -->
+Open Argo CD in your browser to manage the deployed applications.
 
-<!-- TODO ### x. Run simulations -->
+![Argo CD screenshots](./docs/img/argocd-2.png)
 
 ### 7. Destroy your cluster
 
