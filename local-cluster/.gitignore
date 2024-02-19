@@ -4,4 +4,6 @@ terraform.tfstate
 terraform.tfstate.backup
 .terraform.tfstate.lock.info
 
-*.kubeconfig
+kubeconfig
+*.crt
+*.key
