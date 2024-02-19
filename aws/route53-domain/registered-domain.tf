@@ -4,6 +4,7 @@ resource "aws_route53domains_registered_domain" "registered_domain" {
   # NOTE This is an advanced resource and has special caveats to be aware of when using it
 
   # TODO Use this resource only if the domain is registered in AWS Route53
+  # Terraform won't create or destroy this resource, but will update its properties
 
   domain_name = var.domain_name
 
