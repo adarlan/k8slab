@@ -1,19 +1,18 @@
 # K8sLab
 
-A collection of IaC modules, CI/CD workflows, and other utilities designed to simplify the provisioning and management of Kubernetes clusters across different environments, including major cloud providers and local setups. It creates a ready-to-use Kubernetes platform bundled with popular open-source tools and example applications.
+A collection of Infrastructure-as-Code modules, CI/CD workflows, and other utilities designed to simplify the provisioning and management of Kubernetes clusters across different environments, including major cloud providers and local setups. It creates a ready-to-use Kubernetes platform bundled with popular open-source tools and example applications.
 
 ## Features
 
-- Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters on various cloud providers (e.g., [Amazon EKS](https://aws.amazon.com/eks/)) and local environments using [Kind](https://kind.sigs.k8s.io/)
-- Integrated cloud networking across top-tier providers such as [Amazon VPC](https://aws.amazon.com/vpc/)
-- Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows
-- [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/) for managing incoming traffic to the cluster
-- [Karpenter](https://karpenter.sh/) for automatic node scaling based on resource usage
-- Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/)
-- Package management with [Helm](https://helm.sh/) for deploying Kubernetes rousources
-- Infrastructure provisioning with [Terraform](https://www.terraform.io/)
-- Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions)
-- [Docker](https://www.docker.com/) for containerization of applications
+- Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters, whether in the cloud with [Amazon EKS](https://aws.amazon.com/eks/) or locally with [Kind](https://kind.sigs.k8s.io/).
+- Infrastructure provisioning with [Terraform](https://www.terraform.io/).
+- Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows.
+- [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/) for managing incoming traffic to the cluster.
+- Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/).
+- Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
+- Package management with [Helm](https://helm.sh/) for deploying Kubernetes rousources.
+- [Docker](https://www.docker.com/) for containerization of applications.
+- [Karpenter](https://karpenter.sh/) for automatic node scaling based on resource usage.
 
 ## Quick Start
 
@@ -21,9 +20,9 @@ Get up and running with a local Kubernetes cluster preconfigured with essential 
 
 Requirements:
 
-- __Terraform__ | https://developer.hashicorp.com/terraform/install
-- __Docker Engine__ | https://docs.docker.com/engine/install/
-- __Kubectl__ | https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+- Terraform
+- Docker Engine
+- Kubectl
 
 ### 1. Clone this repository
 
@@ -80,10 +79,8 @@ You can use this information to access insightful dashboards for tools like Argo
 ### 5. Configure kubectl to access your cluster
 
 ```shell
-cp k8slab.kubeconfig ~/.kube/config
+KUBECONFIG=kubeconfig:~/.kube/config kubectl config view --merge --flatten > ~/.kube/config
 ```
-
-<!-- TODO merge instead of copy -->
 
 Now you can use `kubectl` to manage your cluster directly from the command line.
 
@@ -115,8 +112,6 @@ it's important to clean up resources.
 ```shell
 terraform destroy
 ```
-
-<!-- TODO ## Learn more -->
 
 ## Contributing
 
