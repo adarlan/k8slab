@@ -4,7 +4,7 @@ resource "kind_cluster" "default" {
 
   wait_for_ready = true
 
-  kubeconfig_path = local.kubeconfig_path
+  kubeconfig_path = "kubeconfig"
 
   kind_config {
     kind        = "Cluster"
