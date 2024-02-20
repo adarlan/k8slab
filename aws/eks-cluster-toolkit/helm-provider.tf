@@ -1,4 +1,7 @@
 provider "helm" {
+
+  # DOC https://registry.terraform.io/providers/hashicorp/helm/latest/docs
+
   kubernetes {
     host                   = "CLUSTER_ENDPOINT"
     cluster_ca_certificate = "CLUSTER_CA_CERTIFICATE"
