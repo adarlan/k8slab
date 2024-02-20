@@ -5,14 +5,14 @@ on:
     branches:
       - '**'
     paths:
-      - 'aws/eks-cluster/**'
+      - 'aws/terraform-modules/eks-cluster/**'
     tags:
       - 'v*.*.*'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'aws/eks-cluster/**'
+      - 'aws/terraform-modules/eks-cluster/**'
   workflow_dispatch:
 
 jobs:
@@ -20,4 +20,4 @@ jobs:
     name: Terraform Module Test
     uses: ./.github/workflows/.terraform-module-test.yaml
     with:
-      context_path: aws/eks-cluster
+      context_path: aws/terraform-modules/eks-cluster
