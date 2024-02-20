@@ -1,3 +1,0 @@
-variable "profile" {
-  type = string
-}
