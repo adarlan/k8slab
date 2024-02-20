@@ -1,3 +1,7 @@
+output "cluster_name" {
+  value = var.cluster_name
+}
+
 output "kubeconfig_path" {
   value = kind_cluster.default.kubeconfig_path
 }
