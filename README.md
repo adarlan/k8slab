@@ -17,7 +17,7 @@ A collection of Infrastructure-as-Code modules, CI/CD workflows, and other utili
 
 ## Quick Start
 
-Tap into the potential of Terraform to get up and running with a local Kubernetes cluster preconfigured with essential tools such as Argo CD, Ingress NGINX, Prometheus, Grafana, and more. Follow a few straightforward steps to deploy a fully configured Hello World application, gaining insights into CI/CD, service routing, observability, security, and other functionalities.
+Use Terraform to quickly set up a local Kubernetes cluster with essential tools like Argo CD, Ingress NGINX, Prometheus, Grafana, and more. Deploy a Hello World application in just a few steps to learn about CI/CD, service routing, observability, and security.
 
 ### 1. Clone this repository
 
@@ -34,7 +34,7 @@ cd k8slab/local-cluster
 ### 3. Create the local Kubernetes cluster with Terraform
 
 Execute the following `terraform` commands to create a Kind (Kubernetes-in-Docker) cluster in your local environment.
-You could use the `kind` CLI tool, but if you plan to use Terraform in production you should use it in development too.
+You could use the `kind` CLI, but if you plan to use Terraform in production you should use it in development too.
 
 ```shell
 terraform -chdir=kind-cluster init
@@ -84,15 +84,118 @@ Open Argo CD in your browser to manage the application deployment.
 
 ![Argo CD screenshot](./docs/img/argocd-2.png)
 
-<!-- TODO the hello-world app manifests are packaged into Helm chart in the ./helm-charts/hello-world dir. since its configuration change, argo cd will detect and sync -->
+### 8. Open the Hello World application in your browser
 
-<!-- TODO the source code of the hello-world app is in ./apps/hello-world. when it is tagged, github actions builds the docker image... develop branch... -->
+Access to the following URL in your browser to open the Hello World application:
 
-<!-- TODO Open the Hello World application in your browser... the app is configured with ingress... dev, stg, prd... -->
+[http://hello.localhost](http://hello.localhost)
 
-<!-- TODO Metrics, ServiceMonitor, etc -->
+### 9. Explore the Hello World application configuration
 
-<!-- TODO Trivy reports? -->
+The Hello World application is organized into multiple directories and files, simulating real-world scenarios where components might reside in separate repositories.
+
+In this repository, the application configuration is distributed across the following directories and files:
+
+- [`apps/hello-world/`](./apps/hello-world/): contains the Python source code of the application along with a `Dockerfile` to build its image.
+- [`.github/workflows/hello-world.yaml`](./.github/workflows/hello-world.yaml): contains the GitHub Actions configuration responsible for testing the application. Upon successfull tests, it builds and pushes the Docker image to a container registry.
+- [`helm-charts/hello-world/`](./helm-charts/hello-world/): contains the application Helm chart and its pre-configured Kubernetes resources, including files like `Deployment.yaml`, `Service.yaml`, `ConfigMap.yaml`, and more.
+- [`argocd-apps/hello-world.yaml`](./argocd-apps/hello-world.yaml): contains the Argo CD configuration necessary for managing the deployment of the application.
+
+Below are some code snippets extracted from this configuration to provide insight into the end-to-end process.
+
+#### Ingress rules
+
+You may have noticed that the URL `http://hello.localhost` doesn't include a port number like `:8080`. Here's a simplified snippet demonstrating how the `hello-world-ingress` is configured to ensure that incoming traffic directed to `hello.localhost` is routed to the port `8080` of the `hello-world-service`:
+
+```yaml
+# helm-charts/hello-world/templates/Ingress.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world-ingress
+  # (...)
+spec:
+  rules:
+  - host: hello.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello-world-service
+            port:
+              number: 8080
+```
+
+#### Argo CD application source
+
+As configurations in the application Helm chart are updated and pushed to the repository, Argo CD automatically detects these changes and synchronizes them to ensure that the deployed state within the cluster aligns with the desired state. See how this is configured:
+
+```yaml
+# argocd-apps/hello-world.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: hello-world-application-set
+  namespace: argocd
+spec:
+  template:
+    spec:
+      source:
+        repoURL: https://github.com/adarlan/k8slab.git
+        path: helm-charts/hello-world
+# (...)
+```
+
+#### Helm templates
+
+The reason for packaging the application manifests into a Helm chart is to utilize Helm template directives, allowing Argo CD to apply distinct values during application deployment across multiple environments. See this example:
+
+```yaml
+# helm-charts/hello-world/templates/ConfigMap.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  greetingMessage: {{ .Values.greetingMessage }}
+```
+
+#### Argo CD generators
+
+Below is an example of the Argo CD configuration for deploying the application in multiple environments, with distinct elements for each environment.
+
+```yaml
+# argocd-apps/hello-world.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: hello-world-application-set
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - environment: staging
+        targetRevision: v1.6.0-rc
+        releaseName: hello-world-staging
+        destinationCluster: staging-cluster
+        greetingMessage: Hello, Staging Environment!
+        # (...)
+
+      - environment: production
+        targetRevision: v1.5.0
+        releaseName: hello-world-production
+        destinationCluster: production-cluster
+        greetingMessage: Hello, Production Environment!
+        # (...)
+# (...)
+```
 
 ### 7. Destroy your cluster
 
