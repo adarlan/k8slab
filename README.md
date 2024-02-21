@@ -6,23 +6,18 @@ A collection of Infrastructure-as-Code modules, CI/CD workflows, and other utili
 
 - Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters, whether in the cloud with [Amazon EKS](https://aws.amazon.com/eks/) or locally with [Kind](https://kind.sigs.k8s.io/).
 - Infrastructure provisioning with [Terraform](https://www.terraform.io/).
-- Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows.
-- [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/) for managing incoming traffic to the cluster.
-- Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/).
-- Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
 - Package management with [Helm](https://helm.sh/) for deploying Kubernetes rousources.
-- [Docker](https://www.docker.com/) for containerization of applications.
+- [Ingress NGINX Controller](https://github.com/kubernetes/ingress-nginx) for managing incoming traffic to the cluster.
+- Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows.
+- Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/).
+- [Trivy Operator](https://aquasecurity.github.io/trivy-operator) to continuously scan the Kubernetes cluster for security issues.
 - [Karpenter](https://karpenter.sh/) for automatic node scaling based on resource usage.
+- Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
+- [Docker](https://www.docker.com/) for containerization of applications.
 
 ## Quick Start
 
-Get up and running with a local Kubernetes cluster preconfigured with essential tools like Argo CD, NGINX Ingress, Prometheus, Grafana, and more, in just a few simple steps.
-
-Requirements:
-
-- Terraform
-- Docker Engine
-- Kubectl
+Tap into the potential of Terraform to get up and running with a local Kubernetes cluster preconfigured with essential tools such as Argo CD, Ingress NGINX, Prometheus, Grafana, and more. Follow a few straightforward steps to deploy a fully configured Hello World application, gaining insights into CI/CD, service routing, observability, security, and other functionalities.
 
 ### 1. Clone this repository
 
@@ -38,51 +33,15 @@ cd k8slab/local-cluster
 
 ### 3. Create the local Kubernetes cluster with Terraform
 
-```shell
-terraform init
-terraform apply -parallelism=1
-```
-
-This will create a Kind (Kubernetes-in-Docker) cluster in your local environment.
-Additionally, it installs essential Helm charts including `argo-cd`, `ingress-nginx`, `kube-prometheus-stack`, and `trivy-operator` into the cluster.
-
-### 4. Retrieve login information for dashboard access
+Execute the following `terraform` commands to create a Kind (Kubernetes-in-Docker) cluster in your local environment.
+You could use the `kind` CLI tool, but if you plan to use Terraform in production you should use it in development too.
 
 ```shell
-terraform output login_info
+terraform -chdir=kind-cluster init
+terraform -chdir=kind-cluster apply -var-file=../kind-cluster.tfvars -var-file=../port-mappings.tfvars
 ```
 
-This command provides URLs, usernames, and passwords required to access dashboards and tools installed on the newly-created cluster.
-
-```txt
-{
-  "argocd" = {
-    "password" = "****"
-    "url" = "https://localhost:8020"
-    "username" = "admin"
-  }
-  "grafana" = {
-    "password" = "****"
-    "url" = "http://localhost:8031"
-    "username" = "admin"
-  }
-  "prometheus" = {
-    "url" = "http://localhost:8030"
-  }
-}
-```
-
-You can use this information to access insightful dashboards for tools like Argo CD, Prometheus, and Grafana directly from your web browser.
-
-![Dashboards screenshot](./docs/img/dashboards.png)
-
-### 5. Configure kubectl to access your cluster
-
-```shell
-KUBECONFIG=kubeconfig:~/.kube/config kubectl config view --merge --flatten > ~/.kube/config
-```
-
-Now you can use `kubectl` to manage your cluster directly from the command line.
+Once Terraform completes its tasks, you can use `kubectl` to manage your cluster directly from the command line.
 
 ```txt
 $ kubectl get nodes
@@ -92,17 +51,48 @@ k8slab-worker          Ready    <none>          5m51s   v1.29.1
 ...
 ```
 
-### 6. Create the Argo CD applications
+### 4. Install essential tools in the cluster using Terraform
 
-Execute the following command to deploy the `hello-world` and `python-crud` applications, with management handled by Argo CD.
+Execute the following commands to install indispensable Helm charts into your cluster, including `argo-cd`, `ingress-nginx`, `kube-prometheus-stack`, and `trivy-operator`.
 
 ```shell
-kubectl apply -f ../argocd-apps
+terraform -chdir=cluster-toolkit init
+terraform -chdir=cluster-toolkit apply -var-file=../cluster-toolkit.tfvars -var-file=../port-mappings.tfvars -parallelism=1
 ```
 
-Open Argo CD in your browser to manage the deployed applications.
+### 5. Retrieve login information for dashboard access
 
-![Argo CD screenshots](./docs/img/argocd-2.png)
+The following command provides URLs, usernames, and passwords required to access dashboards and tools installed on your cluster.
+
+```shell
+terraform -chdir=cluster-toolkit output login_info
+```
+
+You can use this information to access insightful dashboards for tools like Argo CD, Prometheus, and Grafana directly from your web browser.
+
+![Dashboards screenshot](./docs/img/dashboards.png)
+
+### 6. Deploy the Hello World application using Argo CD
+
+Apply the Argo CD application configuration using the following command, kickstarting the deployment process for the `hello-world` application.
+
+```shell
+kubectl apply -f ../argocd-apps/hello-world.yaml
+```
+
+Open Argo CD in your browser to manage the application deployment.
+
+![Argo CD screenshot](./docs/img/argocd-2.png)
+
+<!-- TODO the hello-world app manifests are packaged into Helm chart in the ./helm-charts/hello-world dir. since its configuration change, argo cd will detect and sync -->
+
+<!-- TODO the source code of the hello-world app is in ./apps/hello-world. when it is tagged, github actions builds the docker image... develop branch... -->
+
+<!-- TODO Open the Hello World application in your browser... the app is configured with ingress... dev, stg, prd... -->
+
+<!-- TODO Metrics, ServiceMonitor, etc -->
+
+<!-- TODO Trivy reports? -->
 
 ### 7. Destroy your cluster
 
@@ -110,7 +100,8 @@ Once you've finished exploring and experimenting with your local Kubernetes envi
 it's important to clean up resources.
 
 ```shell
-terraform destroy
+terraform -chdir=cluster-toolkit destroy -var-file=../cluster-toolkit.tfvars -var-file=../port-mappings.tfvars
+terraform -chdir=kind-cluster destroy -var-file=../kind-cluster.tfvars -var-file=../port-mappings.tfvars
 ```
 
 ## Contributing
