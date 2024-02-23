@@ -2,42 +2,205 @@ version: '3.1'
 
 services:
 
+  # ==========================================================================================================================
+  # DATABASE
+
   mongo:
     image: mongo:7.0
-    restart: always
+    ports:
+      - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
       MONGO_INITDB_DATABASE: default
 
+  # ==========================================================================================================================
+  # SERVICES
+
   item-creator:
+    # Creates a new item as long as the name matches the required regex pattern: ^[a-zA-Z]{5,30}+$
+    #
+    # Create item with name=FooBar:
+    # curl -X POST -H "Content-Type: application/json" -d '{"name":"FooBar"}' http://localhost:8011/api/items
+    #
+    # Try to create item with invalid name:
+    # curl -X POST -H "Content-Type: application/json" -d '{"name":"Foo"}' http://localhost:8011/api/items
+    #
+    # Health check:
+    # curl -X GET http://localhost:8011/healthz
+    #
+    # Metrics:
+    # curl -X GET http://localhost:8012/metrics
     build:
-      context: ./
+      context: ./services
       dockerfile: Dockerfile
       args:
         APP_NAME: item-creator
-    # volumes:
-    #   - ./item-creator.py:/app/app.py:ro
-    restart: always
     ports:
-      - 8011:80
+      - 8011:8080
       - 8012:9100
     environment:
-      MONGO_URI: mongodb://root:example@mongo:27017/
+      LOG_LEVEL: INFO
+      MONGO_URI: mongodb://root:example@mongo:27017
       MONGO_DATABASE: default
 
-  # item-reader:
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #     args:
-  #       APP_NAME: item-reader
-  #   # volumes:
-  #   #   - ./item-reader.py:/app/app.py:ro
+  item-reader:
+    # Fetches all items where the name matches the specified regex pattern
+    #
+    # Fetch items with name=FooBar:
+    # curl -X GET http://localhost:8021/api/items/%5EFooBar%24
+    #
+    # Fetch all items:
+    # curl -X GET http://localhost:8021/api/items/%5E.*%24
+    #
+    # Health check:
+    # curl -X GET http://localhost:8021/healthz
+    #
+    # Metrics:
+    # curl -X GET http://localhost:8022/metrics
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: item-reader
+    ports:
+      - 8021:8080
+      - 8022:9100
+    environment:
+      LOG_LEVEL: INFO
+      MONGO_URI: mongodb://root:example@mongo:27017
+      MONGO_DATABASE: default
+
+  item-updater:
+    # Updates all items where the name matches the specified regex pattern as long as the specified name matches the required regex pattern: ^[a-zA-Z]{5,30}+$
+    #
+    # Update items with name=FooBar -> BarFoo:
+    # curl -X PUT -H "Content-Type: application/json" -d '{"name":"BarFoo"}' http://localhost:8031/api/items/%5EFooBar%24
+    #
+    # Health check:
+    # curl -X GET http://localhost:8031/healthz
+    #
+    # Metrics:
+    # curl -X GET http://localhost:8032/metrics
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: item-updater
+    ports:
+      - 8031:8080
+      - 8032:9100
+    environment:
+      LOG_LEVEL: INFO
+      MONGO_URI: mongodb://root:example@mongo:27017
+      MONGO_DATABASE: default
+
+  item-deleter:
+    # Deletes all items where the name matches the specified regex pattern
+    #
+    # Delete items with name=FooBar:
+    # curl -X DELETE http://localhost:8041/api/items/%5EFooBar%24
+    #
+    # Health check:
+    # curl -X GET http://localhost:8041/healthz
+    #
+    # Metrics:
+    # curl -X GET http://localhost:8042/metrics
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: item-deleter
+    ports:
+      - 8041:8080
+      - 8042:9100
+    environment:
+      LOG_LEVEL: INFO
+      MONGO_URI: mongodb://root:example@mongo:27017
+      MONGO_DATABASE: default
+
+  # ==========================================================================================================================
+  # CLIENTS
+
+  # Create a random number of items, generating a random name for each item
+  batch-item-creator:
+    build:
+      context: ./clients
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: batch-item-creator
+    environment:
+      LOG_LEVEL: INFO
+      API_URL: http://item-creator:8080/api/items
+      MIN_ITERATIONS: 1
+      MAX_ITERATIONS: 50
+    restart: always
+
+  # Fetch items a random number of times, using a random filter for each iteration
+  batch-item-reader:
+    build:
+      context: ./clients
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: batch-item-reader
+    environment:
+      LOG_LEVEL: INFO
+      API_URL: http://item-reader:8080/api/items
+      MIN_ITERATIONS: 1
+      MAX_ITERATIONS: 40
+    restart: always
+
+  # Update items a random number of times, using a random filter and generating a random name for each iteration
+  batch-item-updater:
+    build:
+      context: ./clients
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: batch-item-updater
+    environment:
+      LOG_LEVEL: INFO
+      API_URL: http://item-updater:8080/api/items
+      MIN_ITERATIONS: 1
+      MAX_ITERATIONS: 30
+    restart: always
+
+  # Delete items a random number of times, using a random filter for each iteration
+  batch-item-deleter:
+    build:
+      context: ./clients
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: batch-item-deleter
+    environment:
+      LOG_LEVEL: INFO
+      API_URL: http://item-deleter:8080/api/items
+      MIN_ITERATIONS: 1
+      MAX_ITERATIONS: 10
+    restart: always
+
+  # ==========================================================================================================================
+  # DEBUG
+
+  # curl-POST:
+  #   image: docker.io/adarlan/curl
+  #   command: "curl --silent -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"FooBar\"}' http://item-creator:8080/api/items"
   #   restart: always
-  #   ports:
-  #     - 8021:80
-  #     - 8022:9100
-  #   environment:
-  #     MONGO_URI: mongodb://root:example@mongo:27017/
-  #     MONGO_DATABASE: default
+
+  # curl-GET:
+  #   image: docker.io/adarlan/curl
+  #   command: "curl --silent -X GET http://item-reader:8080/api/items/%5E.*%24"
+  #   restart: always
+
+  # curl-PUT:
+  #   image: docker.io/adarlan/curl
+  #   command: "curl --silent -X PUT -H \"Content-Type: application/json\" -d '{\"name\":\"BarFoo\"}' http://item-updater:8080/api/items/%5EFooBar%24"
+  #   restart: always
+
+  # curl-DELETE:
+  #   image: docker.io/adarlan/curl
+  #   command: "curl --silent -X DELETE http://item-deleter:8080/api/items/%5EBarFoo%24"
+  #   restart: always
+
+  # ubuntu:
+  #   image: ubuntu
+  #   command: tail -f /dev/null

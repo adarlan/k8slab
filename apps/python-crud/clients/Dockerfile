@@ -2,24 +2,17 @@ FROM python:3.12-alpine
 
 WORKDIR /app
 
-ENV LOG_LEVEL="INFO"
-ENV LOG_FORMAT="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-ENV APP_PORT="80"
-ENV METRICS_PORT="9100"
-
-EXPOSE $APP_PORT
-EXPOSE $METRICS_PORT
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD [ "python", "app.py" ]
+ENV APP_ENVIRONMENT="container"
+ENV LOG_LEVEL="INFO"
 
 COPY _*.py .
 
 ARG APP_NAME
 COPY ${APP_NAME}.py app.py
+CMD [ "python", "app.py" ]
 
 # TODO Create a non-root user
 
