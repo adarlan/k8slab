@@ -15,15 +15,15 @@ spec:
   - host: {{ .Values.ingressHost }}
     http:
       paths:
-      {{ if eq .Values.ingressPath "/" }}
-      - pathType: Prefix
-        path: / # TODO the path is being completely ignored
-      {{ else }}
+      # {{ if eq .Values.ingressPath "/" }}
+      # - pathType: Prefix
+      #   path: / # TODO the path is being completely ignored
+      # {{ else }}
       - pathType: ImplementationSpecific
         path: {{ .Values.ingressPath }}(/|$)(.*)
-      {{ end }}
+      # {{ end }}
         backend:
           service:
             name: {{ .Release.Name }}
             port:
-              number: 80 # TODO can I use port name?
+              number: 80
