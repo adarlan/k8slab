@@ -31,8 +31,6 @@ spec:
         ports:
         - name: web
           containerPort: 80
-        - name: healthz
-          containerPort: 8080
         - name: metrics
           containerPort: 9100
 
@@ -46,7 +44,7 @@ spec:
 
         livenessProbe:
           httpGet:
-            port: healthz
+            port: web
             path: /healthz
           initialDelaySeconds: 30
           periodSeconds: 10
