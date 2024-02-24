@@ -1,19 +1,27 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
+
 metadata:
-  name: python-crud
+  name: {{- .Release.Name }}
+  labels:
+    app: {{- .Release.Name }}
+
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+
 spec:
   rules:
-  - host: pycrud.localhost
+  - host: {{- .Values.ingressHost }}
     http:
       paths:
+
+      {{- range .Values.microservices }}
       - pathType: ImplementationSpecific
-        path: /create(/|$)(.*)
+        path: {{- printf "%s/%s" .Values.ingressBasePath .ingressSubpath }}(/|$)(.*)
         backend:
           service:
-            name: item-creator
+            name: {{- printf "%s-%s" .Release.Name .microserviceName }}
             port: 
               name: web
+      {{- end }}

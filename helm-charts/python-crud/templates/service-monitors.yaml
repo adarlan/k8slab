@@ -1,0 +1,21 @@
+{{- range .Values.microservices }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+
+metadata:
+  name: {{- printf "%s-%s" .Release.Name .microserviceName }}
+  labels:
+    app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+---
+{{- end }}

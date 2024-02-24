@@ -1,0 +1,24 @@
+{{- range .Values.microservices }}
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{- printf "%s-%s" .Release.Name .microserviceName }}
+  labels:
+    app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+spec:
+  selector:
+    app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+    targetPort: web
+  - name: metrics
+    port: 9100
+    protocol: TCP
+    targetPort: metrics
+---
+{{- end }}

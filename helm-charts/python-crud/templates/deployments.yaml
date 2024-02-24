@@ -1,0 +1,60 @@
+{{- range .Values.microservices }}
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{- printf "%s-%s" .Release.Name .microserviceName }}
+  labels:
+    app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+  replicas: 5
+
+  template:
+    metadata:
+      labels:
+        app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+
+    spec:
+      containers:
+      - name: {{- .microserviceName }}
+
+        image: {{- printf "docker.io/adarlan/python-crud-%s:master" .microserviceName }}
+        # TODO tag for development environment
+
+        ports:
+        - name: web
+          containerPort: 8080
+        - name: metrics
+          containerPort: 9100
+
+        env:
+        - name: LOG_LEVEL
+          value: {{- .Values.logLevel }}
+        - name: MONGO_HOST
+          value: {{- printf "%s-mongodb.%s.svc.cluster.local" .Release.Name .Release.Namespace }}
+        - name: MONGO_PORT
+          value: 27017
+        envFrom:
+        - secretRef: {{- printf "%s-mongodb-credentials" .Release.Name }}
+
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 5%
+          limits:
+            memory: 150Mi
+            cpu: 15%
+
+        livenessProbe:
+          httpGet:
+            port: web
+            path: /healthz
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+{{- end }}
