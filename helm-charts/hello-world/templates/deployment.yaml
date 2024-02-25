@@ -2,31 +2,31 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: {{- .Release.Name }}
+  name: {{ .Release.Name }}
   labels:
-    app: {{- .Release.Name }}
+    app: {{ .Release.Name }}
 
 spec:
   selector:
     matchLabels:
-      app: {{- .Release.Name }}
+      app: {{ .Release.Name }}
 
-  replicas: {{- .Values.replicas }}
+  replicas: {{ .Values.replicas }}
 
   template:
     metadata:
       labels:
-        app: {{- .Release.Name }}
+        app: {{ .Release.Name }}
 
     spec:
       containers:
       - name: hello-world
 
-        {{- if eq .Values.environment "development" }}
-        image: {{- printf "docker.io/adarlan/hello-world:%s" .Values.unstableImageTag }}
-        {{- else }}
-        image: {{- printf "docker.io/adarlan/hello-world:%s" .Values.stableImageTag }}
-        {{- end }}
+        {{ if eq .Values.environment "development" }}
+        image: {{ printf "docker.io/adarlan/hello-world:%s" .Values.unstableImageTag }}
+        {{ else }}
+        image: {{ printf "docker.io/adarlan/hello-world:%s" .Values.stableImageTag }}
+        {{ end }}
 
         ports:
         - name: web
@@ -57,4 +57,4 @@ spec:
       volumes:
       - name: config-files
         configMap:
-          name: {{- .Release.Name }}
+          name: {{ .Release.Name }}

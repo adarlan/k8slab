@@ -1,17 +1,20 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 
-{{- $routeParts := split "/" .Values.route -}}
-{{- $host := index $routeParts 0 -}}
-{{- $path := join "/" (slice $routeParts 1) -}}
+{{- $routeParts := regexSplit "\\/" .Values.route -1 }}
+{{- $host := index $routeParts 0 }}
+{{- $pathParts := slice $routeParts 1 }}
+{{- $pathParts := without $pathParts "/" }}
+{{- $pathParts := without $pathParts "" }}
+{{- $path := join "/" $pathParts }}
+{{- $path := (eq $path "") | ternary "" (printf "/%s" $path) }}
+{{- $route := printf "%s%s" $host $path }}
 
 metadata:
-  name: {{- .Release.Name }}
+  name: {{ .Release.Name }}
   labels:
-    app: {{- .Release.Name }}
-    route: {{- .Values.route }}
-    host: {{- $host }}
-    path: {{- $path }}
+    app: {{ .Release.Name }}
+    route: {{ $route }}
 
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
@@ -19,13 +22,13 @@ metadata:
 
 spec:
   rules:
-  - host: {{- $host }}
+  - host: {{ $host }}
     http:
       paths:
       - pathType: ImplementationSpecific
-        path: {{- ternary (eq $path "/") "" $path }}(/|$)(.*)
+        path: {{ (eq $path "") | ternary "" $path }}(/|$)(.*)
         backend:
           service:
-            name: {{- .Release.Name }}
+            name: {{ .Release.Name }}
             port:
-              number: {{- .Values._servicePortNumber }}
+              number: {{ .Values._servicePortNumber }}
