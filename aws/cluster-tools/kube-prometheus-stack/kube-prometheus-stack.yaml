@@ -1,0 +1,10 @@
+
+  # set {
+  #   name  = "grafana.service.annotation\\.service\\.beta\\.kubernetes\\.io/aws-load-balancer-internal"
+  #   value = "true"
+  # }
+
+  # set {
+  #   name  = "prometheus.service.annotation\\.service\\.beta\\.kubernetes\\.io/aws-load-balancer-internal"
+  #   value = "true"
+  # }
