@@ -4,40 +4,40 @@ kind: ApplicationSet
 metadata:
   name: hello-world
   namespace: argocd
+  # finalizers:
+  # - resources-finalizer.argocd.argoproj.io
 
 spec:
   generators:
   - list:
       elements:
-      - environment: development
-        targetRevision: master
-        appName: hello-world-dev
-        destinationCluster: in-cluster
-        destinationNamespace: development
-        greetingMessage: Hello, Development Environment!
-        ingressHost: dev.localhost
-        ingressPath: /hello
-        replicas: "3"
-
-      - environment: staging
-        targetRevision: master
-        appName: hello-world-stg
-        destinationCluster: in-cluster
-        destinationNamespace: staging
-        greetingMessage: Hello, Staging Environment!
-        ingressHost: stg.localhost
-        ingressPath: /hello
-        replicas: "9"
 
       - environment: production
-        targetRevision: master
+        greetingMessage: Hello, Users!
         appName: hello-world-prd
+        targetRevision: master
         destinationCluster: in-cluster
         destinationNamespace: production
-        greetingMessage: Hello, Production Environment!
-        ingressHost: hello.localhost
-        ingressPath: /
+        route: hello.localhost
         replicas: "36"
+
+      - environment: staging
+        greetingMessage: Hello, QA Folks!
+        appName: hello-world-stg
+        targetRevision: master
+        destinationCluster: in-cluster
+        destinationNamespace: staging
+        route: stg.localhost/hello/
+        replicas: "9"
+
+      - environment: development
+        greetingMessage: Hello, Devs!
+        appName: hello-world-dev
+        targetRevision: master
+        destinationCluster: in-cluster
+        destinationNamespace: development
+        route: dev.localhost/hello
+        replicas: "3"
 
   template:
     metadata:
@@ -59,8 +59,7 @@ spec:
           parameters:
           - { name: environment,     value: "{{environment}}" }
           - { name: greetingMessage, value: "{{greetingMessage}}" }
-          - { name: ingressHost,     value: "{{ingressHost}}" }
-          - { name: ingressPath,     value: "{{ingressPath}}" }
+          - { name: route,           value: "{{route}}" }
           - { name: replicas,        value: "{{replicas}}" }
 
       destination:
