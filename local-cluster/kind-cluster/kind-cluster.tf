@@ -15,6 +15,8 @@ resource "kind_cluster" "default" {
     node {
       role = "control-plane"
 
+      # TODO what if it has multi control-plane? how to configure labels and ports? specially for ingress
+
       kubeadm_config_patches = [
         <<-EOF
         kind: InitConfiguration

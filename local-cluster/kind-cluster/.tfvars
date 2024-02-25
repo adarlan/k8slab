@@ -1,3 +1,9 @@
+cluster_name = "k8slab"
+
+worker_nodes = 2
+
+controll_plane_node_labels = ["ingress-ready=true"]
+
 port_mappings = [
   {
     name = "ingress",

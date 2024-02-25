@@ -1,8 +1,19 @@
 #!/bin/bash
-set -ex
+source handy-functions.sh
 
-./kind-cluster.sh apply
+terraform-config
 
-./cluster-toolkit.sh apply
-./cluster-toolkit.sh argocd-login
-./cluster-toolkit.sh output-login-info
+terraform-apply kind-cluster
+
+terraform-apply trivy-operator
+terraform-apply ingress-nginx
+terraform-apply kube-prometheus-stack
+terraform-apply argo-cd
+
+kubectl-config
+helm-config
+argocd-config
+
+deploy-app hello-world
+
+info

@@ -1,10 +1,19 @@
 #!/bin/bash
-set -ex
+source handy-functions.sh
 
-./cluster-toolkit.sh plan-destroy \
-&& ./cluster-toolkit.sh destroy-with-plan \
-|| ./cluster-toolkit.sh force-destroy
+undeploy-app hello-world
 
-./kind-cluster.sh plan-destroy \
-&& ./kind-cluster.sh destroy-with-plan \
-|| ./kind-cluster.sh force-destroy
+terraform-config
+
+terraform-destroy argo-cd               || force-destroy argo-cd               || true
+terraform-destroy kube-prometheus-stack || force-destroy kube-prometheus-stack || true
+terraform-destroy ingress-nginx         || force-destroy ingress-nginx         || true
+terraform-destroy trivy-operator        || force-destroy trivy-operator        || true
+
+terraform-destroy kind-cluster          || force-destroy kind-cluster
+
+git-clean argo-cd
+git-clean kube-prometheus-stack
+git-clean ingress-nginx
+git-clean trivy-operator
+git-clean kind-cluster
