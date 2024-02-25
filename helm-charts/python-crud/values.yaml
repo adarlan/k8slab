@@ -1,8 +1,20 @@
 microservices:
+
   - microserviceName: item-creator
+    clientMaxIterations: 50
+    clientIntervalInMinutes: 3
+
   - microserviceName: item-reader
+    clientMaxIterations: 500
+    clientIntervalInMinutes: 1
+
   - microserviceName: item-updater
+    clientMaxIterations: 100
+    clientIntervalInMinutes: 2
+
   - microserviceName: item-deleter
+    clientMaxIterations: 10
+    clientIntervalInMinutes: 4
 
 logLevel: INFO
 

@@ -1,0 +1,56 @@
+{{ $releaseName := .Release.Name }}
+{{ $releaseNamespace := .Release.Namespace }}
+
+{{ range .Values.microservices }}
+
+{{ $clientName := printf "batch-%s" .microserviceName }}
+
+{{ $jobName := printf "%s-%s" $releaseName $clientName }}
+{{ $serviceName := printf "%s-%s" $releaseName .microserviceName }}
+
+# URL to access the service directly, without ingress
+# in this case the job must be in the same namespace as the service
+{{ $apiUrl := printf "http://%s.%s.svc.cluster.local/api/items" $serviceName $releaseNamespace }}
+
+apiVersion: batch/v1
+kind: CronJob
+
+metadata:
+  name: {{ $jobName }}
+
+spec:
+  schedule: "*/{{ .clientIntervalInMinutes }} * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: {{ $clientName }}
+
+            image: {{ printf "docker.io/adarlan/python-crud-%s:master" $clientName }}
+            # TODO useDevelopBranchImage
+
+            env:
+            - name: LOG_LEVEL
+              value: INFO
+
+            - name: API_URL
+              value: {{ $apiUrl }}
+
+            - name: MIN_ITERATIONS
+              value: "1"
+
+            - name: MAX_ITERATIONS
+              value: "{{ .clientMaxIterations }}"
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 250m
+                memory: 128Mi
+
+---
+{{ end }}
