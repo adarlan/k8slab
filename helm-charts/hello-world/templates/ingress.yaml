@@ -1,10 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 
+{{- $routeParts := split "/" .Values.route -}}
+{{- $host := index $routeParts 0 -}}
+{{- $path := join "/" (slice $routeParts 1) -}}
+
 metadata:
   name: {{- .Release.Name }}
   labels:
     app: {{- .Release.Name }}
+    route: {{- .Values.route }}
+    host: {{- $host }}
+    path: {{- $path }}
 
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
@@ -12,11 +19,11 @@ metadata:
 
 spec:
   rules:
-  - host: {{- .Values.ingressHost }}
+  - host: {{- $host }}
     http:
       paths:
       - pathType: ImplementationSpecific
-        path: {{- ternary (eq .Values.ingressPath "/") "" .Values.ingressPath }}(/|$)(.*)
+        path: {{- ternary (eq $path "/") "" $path }}(/|$)(.*)
         backend:
           service:
             name: {{- .Release.Name }}

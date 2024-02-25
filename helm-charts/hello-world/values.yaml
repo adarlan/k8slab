@@ -1,11 +1,9 @@
 environment: local
 greetingMessage: Hello, World!
-ingressHost: localhost
-ingressPath: /
+route: localhost
 replicas: 1
 
 stableImageTag: master
-
 # unstableImageTag: develop
 unstableImageTag: master
 
