@@ -8,3 +8,5 @@ stableImageTag: master
 
 # unstableImageTag: develop
 unstableImageTag: master
+
+_servicePortNumber: 80

@@ -2,9 +2,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 
 metadata:
-  name: {{ .Release.Name }}
+  name: {{- .Release.Name }}
   labels:
-    app: {{ .Release.Name }}
+    app: {{- .Release.Name }}
 
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
@@ -12,18 +12,13 @@ metadata:
 
 spec:
   rules:
-  - host: {{ .Values.ingressHost }}
+  - host: {{- .Values.ingressHost }}
     http:
       paths:
-      # {{ if eq .Values.ingressPath "/" }}
-      # - pathType: Prefix
-      #   path: / # TODO the path is being completely ignored
-      # {{ else }}
       - pathType: ImplementationSpecific
-        path: {{ .Values.ingressPath }}(/|$)(.*)
-      # {{ end }}
+        path: {{- ternary (eq .Values.ingressPath "/") "" .Values.ingressPath }}(/|$)(.*)
         backend:
           service:
-            name: {{ .Release.Name }}
+            name: {{- .Release.Name }}
             port:
-              number: 80
+              number: {{- .Values._servicePortNumber }}
