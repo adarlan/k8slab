@@ -1,6 +1,6 @@
 environment: local
 greetingMessage: Hello, World!
-route: localhost/hello
+route: localhost
 replicas: 1
 
 stableImageTag: master
