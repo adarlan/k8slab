@@ -19,7 +19,13 @@ METRICS_PORT = int(os.environ.get(
 
 MONGO_URI = os.environ.get(
     'MONGO_URI',
-    'mongodb://root:example@localhost:27017/')
+    'mongodb://{username}:{password}@{host}:{port}/'.format(
+        username = os.environ.get('MONGO_USERNAME', 'root'),
+        password = os.environ.get('MONGO_PASSWORD', 'example'),
+        host     = os.environ.get('MONGO_HOST',     'localhost'),
+        port     = os.environ.get('MONGO_PORT',     '27017')
+    )
+)
 
 MONGO_DATABASE = os.environ.get(
     'MONGO_DATABASE',
