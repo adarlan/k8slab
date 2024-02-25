@@ -1,19 +1,19 @@
 # K8sLab
 
-A collection of Infrastructure-as-Code modules, CI/CD workflows, and other utilities designed to simplify the provisioning and management of Kubernetes clusters across different environments, including major cloud providers and local setups. It creates a ready-to-use Kubernetes platform bundled with popular open-source tools and example applications.
+A collection of components designed to simplify the provisioning and management of Kubernetes clusters across different environments, including major cloud providers and local setups. It creates a ready-to-use Kubernetes platform bundled with popular open-source tools and example applications.
 
 ## Features
 
-- Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters, whether in the cloud with [Amazon EKS](https://aws.amazon.com/eks/) or locally with [Kind](https://kind.sigs.k8s.io/).
+- Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters, whether in the cloud with [Amazon EKS](https://aws.amazon.com/eks/) or locally with [KinD](https://kind.sigs.k8s.io/).
 - Infrastructure provisioning with [Terraform](https://www.terraform.io/).
 - Package management with [Helm](https://helm.sh/) for deploying Kubernetes rousources.
-- [Ingress NGINX Controller](https://github.com/kubernetes/ingress-nginx) for managing incoming traffic to the cluster.
+- [Ingress NGINX Controller](https://kubernetes.github.io/ingress-nginx/) for managing incoming traffic to the cluster.
 - Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows.
 - Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/).
 - [Trivy Operator](https://aquasecurity.github.io/trivy-operator) to continuously scan the Kubernetes cluster for security issues.
 - [Karpenter](https://karpenter.sh/) for automatic node scaling based on resource usage.
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
-- [Docker](https://www.docker.com/) for containerization of applications.
+- [Docker Engine](https://docs.docker.com/engine/) for containerization of applications.
 
 ## Quick Start
 
@@ -33,7 +33,7 @@ cd k8slab/local-cluster
 
 ### 3. Create the local Kubernetes cluster with Terraform
 
-Execute the following `terraform` commands to create a Kind (Kubernetes-in-Docker) cluster in your local environment.
+Execute the following `terraform` commands to create a KinD (Kubernetes-in-Docker) cluster in your local environment.
 You could use the `kind` CLI, but if you plan to use Terraform in production you should use it in development too.
 
 ```shell
@@ -74,7 +74,7 @@ You can use this information to access insightful dashboards for tools like Argo
 
 ### 6. Deploy the Hello World application using Argo CD
 
-Apply the Argo CD application configuration using the following command, kickstarting the deployment process for the `hello-world` application.
+Apply the Argo CD configuration using the following command, kickstarting the deployment process for the `hello-world` application.
 
 ```shell
 kubectl apply -f ../argocd-apps/hello-world.yaml
@@ -86,24 +86,50 @@ Open Argo CD in your browser to manage the application deployment.
 
 ### 8. Open the Hello World application in your browser
 
-Access to the following URL in your browser to open the Hello World application:
+Access the following URL in your browser to open the Hello World application:
 
 [http://hello.localhost](http://hello.localhost)
 
 ### 9. Explore the Hello World application configuration
 
-The Hello World application is organized into multiple directories and files, simulating real-world scenarios where components might reside in separate repositories.
+<!-- The Hello World application is organized into multiple directories and files, simulating real-world scenarios where components might reside in separate repositories. -->
 
-In this repository, the application configuration is distributed across the following directories and files:
+<!-- In this repository, the application configuration is distributed across the following directories and files: -->
 
-- [`apps/hello-world/`](./apps/hello-world/): contains the Python source code of the application along with a `Dockerfile` to build its image.
-- [`.github/workflows/hello-world.yaml`](./.github/workflows/hello-world.yaml): contains the GitHub Actions configuration responsible for testing the application. Upon successfull tests, it builds and pushes the Docker image to a container registry.
-- [`helm-charts/hello-world/`](./helm-charts/hello-world/): contains the application Helm chart and its pre-configured Kubernetes resources, including files like `Deployment.yaml`, `Service.yaml`, `ConfigMap.yaml`, and more.
-- [`argocd-apps/hello-world.yaml`](./argocd-apps/hello-world.yaml): contains the Argo CD configuration necessary for managing the deployment of the application.
+<!-- - [`apps/hello-world/`](./apps/hello-world/): contains the Python source code of the application along with a `Dockerfile` to build its image. -->
+<!-- - [`.github/workflows/hello-world.yaml`](./.github/workflows/hello-world.yaml): contains the GitHub Actions configuration responsible for testing the application. Upon successfull tests, it builds and pushes the Docker image to a container registry. -->
+<!-- - [`helm-charts/hello-world/`](./helm-charts/hello-world/): contains the application Helm chart and its pre-configured Kubernetes resources, including files like `Deployment.yaml`, `Service.yaml`, `ConfigMap.yaml`, and more. -->
+<!-- - [`argocd-apps/hello-world.yaml`](./argocd-apps/hello-world.yaml): contains the Argo CD configuration necessary for managing the deployment of the application. -->
 
-Below are some code snippets extracted from this configuration to provide insight into the end-to-end process.
+<!-- ```txt
+apps
+└── hello-world
+    ├── Dockerfile
+    ├── index.html
+    └── nginx.conf
 
-#### Ingress rules
+.github
+└── workflows
+    └── hello-world.yaml
+
+helm-charts
+└── hello-world
+    ├── Chart.yaml
+    ├── templates
+    │   ├── ConfigMap.yaml
+    │   ├── Deployment.yaml
+    │   ├── Ingress.yaml
+    │   ├── ServiceMonitor.yaml
+    │   └── Service.yaml
+    └── values.yaml
+
+argocd-apps
+└── hello-world.yaml
+``` -->
+
+Below are some code snippets extracted from the Hello World application configuration.
+
+#### Ingress NGINX Controller governs how external traffic is directed to Kubernetes services
 
 You may have noticed that the URL `http://hello.localhost` doesn't include a port number like `:8080`. Here's a simplified snippet demonstrating how the `hello-world-ingress` is configured to ensure that incoming traffic directed to `hello.localhost` is routed to the port `8080` of the `hello-world-service`:
 
@@ -129,9 +155,9 @@ spec:
               number: 8080
 ```
 
-#### Argo CD application source
+#### Argo CD listens for changes in the application Helm chart
 
-As configurations in the application Helm chart are updated and pushed to the repository, Argo CD automatically detects these changes and synchronizes them to ensure that the deployed state within the cluster aligns with the desired state. See how this is configured:
+As configurations in the `helm-charts/hello-world` directory of this repository are updated and pushed to GitHub, Argo CD automatically detects these changes and synchronizes them to ensure that the deployed state within the cluster aligns with the desired state. See where it is configured:
 
 ```yaml
 # argocd-apps/hello-world.yaml
@@ -150,9 +176,9 @@ spec:
 # (...)
 ```
 
-#### Helm templates
+#### Helm templates enable parameterized application deployments
 
-The reason for packaging the application manifests into a Helm chart is to utilize Helm template directives, allowing Argo CD to apply distinct values during application deployment across multiple environments. See this example:
+The reason for packaging the application manifests into a Helm chart is to utilize Helm template directives, allowing the injection of distinct values during application deployment across multiple environments. See this example:
 
 ```yaml
 # helm-charts/hello-world/templates/ConfigMap.yaml
@@ -165,9 +191,9 @@ data:
   greetingMessage: {{ .Values.greetingMessage }}
 ```
 
-#### Argo CD generators
+#### Argo CD deploys the application in multiple environments with distinct parameters
 
-Below is an example of the Argo CD configuration for deploying the application in multiple environments, with distinct elements for each environment.
+Below is an example of the Argo CD configuration for deploying the application in multiple environments, injecting different values for each environment.
 
 ```yaml
 # argocd-apps/hello-world.yaml
@@ -181,19 +207,32 @@ spec:
   generators:
   - list:
       elements:
-      - environment: staging
-        targetRevision: v1.6.0-rc
-        releaseName: hello-world-staging
-        destinationCluster: staging-cluster
+
+        # STAGING
+      - releaseName: hello-world-staging
         greetingMessage: Hello, Staging Environment!
+        destinationCluster: staging
         # (...)
 
-      - environment: production
-        targetRevision: v1.5.0
-        releaseName: hello-world-production
-        destinationCluster: production-cluster
+        # PRODUCTION
+      - releaseName: hello-world-production
         greetingMessage: Hello, Production Environment!
+        destinationCluster: production
         # (...)
+
+  template:
+    spec:
+      source:
+        repoURL: https://github.com/adarlan/k8slab.git
+        path: helm-charts/hello-world
+        helm:
+          releaseName: "{{releaseName}}"
+          parameters:
+          - { name: greetingMessage, value: "{{greetingMessage}}" }
+        # (...)
+
+      destination:
+        name: "{{destinationCluster}}"
 # (...)
 ```
 
