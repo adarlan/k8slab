@@ -1,14 +1,10 @@
 microservices:
   - microserviceName: item-creator
-    ingressSubpath: /create
   - microserviceName: item-reader
-    ingressSubpath: /read
   - microserviceName: item-updater
-    ingressSubpath: /update
   - microserviceName: item-deleter
-    ingressSubpath: /delete
 
 logLevel: INFO
 
 ingressHost: crud.localhost
-ingressBasePath: ""
+ingressBasePath: "/crud"

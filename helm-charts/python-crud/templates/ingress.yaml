@@ -2,9 +2,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 
 metadata:
-  name: {{- .Release.Name }}
+  name: {{ .Release.Name }}
   labels:
-    app: {{- .Release.Name }}
+    app: {{ .Release.Name }}
 
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
@@ -12,16 +12,19 @@ metadata:
 
 spec:
   rules:
-  - host: {{- .Values.ingressHost }}
+  - host: {{ .Values.ingressHost }}
     http:
       paths:
 
-      {{- range .Values.microservices }}
+      {{ $releaseName := .Release.Name }}
+      {{ $ingressBasePath := .Values.ingressBasePath }}
+      {{ range .Values.microservices }}
+      {{ $path := printf "%s/%s" $ingressBasePath .microserviceName }}
       - pathType: ImplementationSpecific
-        path: {{- printf "%s/%s" .Values.ingressBasePath .ingressSubpath }}(/|$)(.*)
+        path: {{ $path }}(/|$)(.*)
         backend:
           service:
-            name: {{- printf "%s-%s" .Release.Name .microserviceName }}
+            name: {{ printf "%s-%s" $releaseName .microserviceName }}
             port: 
               name: web
-      {{- end }}
+      {{ end }}

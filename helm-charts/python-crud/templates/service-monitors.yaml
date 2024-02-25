@@ -1,16 +1,17 @@
-{{- range .Values.microservices }}
+{{ $releaseName := .Release.Name }}
+{{ range .Values.microservices }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 
 metadata:
-  name: {{- printf "%s-%s" .Release.Name .microserviceName }}
+  name: {{ printf "%s-%s" $releaseName .microserviceName }}
   labels:
-    app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+    app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
 spec:
   selector:
     matchLabels:
-      app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+      app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
   endpoints:
   - port: metrics
@@ -18,4 +19,4 @@ spec:
     interval: 15s
     scrapeTimeout: 10s
 ---
-{{- end }}
+{{ end }}

@@ -1,29 +1,32 @@
-{{- range .Values.microservices }}
+{{ $releaseName := .Release.Name }}
+{{ $releaseNamespace := .Release.Namespace }}
+{{ $logLevel := .Values.logLevel }}
+{{ range .Values.microservices }}
 apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: {{- printf "%s-%s" .Release.Name .microserviceName }}
+  name: {{ printf "%s-%s" $releaseName .microserviceName }}
   labels:
-    app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+    app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
 spec:
   selector:
     matchLabels:
-      app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+      app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
   replicas: 5
 
   template:
     metadata:
       labels:
-        app: {{- printf "%s-%s" .Release.Name .microserviceName }}
+        app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
     spec:
       containers:
-      - name: {{- .microserviceName }}
+      - name: {{ .microserviceName }}
 
-        image: {{- printf "docker.io/adarlan/python-crud-%s:master" .microserviceName }}
+        image: {{ printf "docker.io/adarlan/python-crud-%s:master" .microserviceName }}
         # TODO tag for development environment
 
         ports:
@@ -34,21 +37,34 @@ spec:
 
         env:
         - name: LOG_LEVEL
-          value: {{- .Values.logLevel }}
+          value: {{ $logLevel }}
         - name: MONGO_HOST
-          value: {{- printf "%s-mongodb.%s.svc.cluster.local" .Release.Name .Release.Namespace }}
+          value: {{ printf "%s-mongodb.%s.svc.cluster.local" $releaseName $releaseNamespace }}
         - name: MONGO_PORT
-          value: 27017
-        envFrom:
-        - secretRef: {{- printf "%s-mongodb-credentials" .Release.Name }}
+          value: "27017"
+        - name: MONGO_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ printf "%s-mongodb-credentials" $releaseName }}
+              key: MONGO_USERNAME
+        - name: MONGO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ printf "%s-mongodb-credentials" $releaseName }}
+              key: MONGO_PASSWORD
+        - name: MONGO_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: {{ printf "%s-mongodb-credentials" $releaseName }}
+              key: MONGO_DATABASE
 
         resources:
           requests:
-            memory: 50Mi
-            cpu: 5%
+            cpu: 50m
+            memory: 64Mi
           limits:
-            memory: 150Mi
-            cpu: 15%
+            cpu: 250m
+            memory: 128Mi
 
         livenessProbe:
           httpGet:
@@ -57,4 +73,4 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
 ---
-{{- end }}
+{{ end }}
