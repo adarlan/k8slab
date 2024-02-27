@@ -22,14 +22,10 @@ microservices:
 
 logLevel: INFO
 
-enableIngress: "false"
-ingressHost: crud.localhost
-ingressBasePath: "/crud"
-# TODO
-# ingress:
-#   enabled: true
-#   host: crud.localhost
-#   basePath: /crud
+ingress:
+  enabled: false
+  host: localhost
+  basePath: /crud
 
 serviceMonitor:
   enabled: false

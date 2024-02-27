@@ -1,4 +1,4 @@
-{{ if eq .Values.enableIngress "true" }}
+{{ if .Values.ingress.enabled }}
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -14,12 +14,12 @@ metadata:
 
 spec:
   rules:
-  - host: {{ .Values.ingressHost }}
+  - host: {{ .Values.ingress.host }}
     http:
       paths:
 
       {{ $releaseName := .Release.Name }}
-      {{ $ingressBasePath := .Values.ingressBasePath }}
+      {{ $ingressBasePath := .Values.ingress.basePath }}
       {{ range .Values.microservices }}
       {{ $path := printf "%s/%s" $ingressBasePath .microserviceName }}
       - pathType: ImplementationSpecific
