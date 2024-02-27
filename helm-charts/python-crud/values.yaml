@@ -1,22 +1,36 @@
 microservices:
 
   - microserviceName: item-creator
+    microserviceReplicas: 4
     clientMaxIterations: 50
     clientIntervalInMinutes: 3
 
   - microserviceName: item-reader
+    microserviceReplicas: 8
     clientMaxIterations: 500
     clientIntervalInMinutes: 1
 
   - microserviceName: item-updater
+    microserviceReplicas: 6
     clientMaxIterations: 100
     clientIntervalInMinutes: 2
 
   - microserviceName: item-deleter
+    microserviceReplicas: 2
     clientMaxIterations: 10
     clientIntervalInMinutes: 4
 
 logLevel: INFO
 
+enableIngress: "false"
 ingressHost: crud.localhost
 ingressBasePath: "/crud"
+# TODO
+# ingress:
+#   enabled: true
+#   host: crud.localhost
+#   basePath: /crud
+
+serviceMonitor:
+  enabled: false
+  prometheusOperatorReleaseName: prometheus

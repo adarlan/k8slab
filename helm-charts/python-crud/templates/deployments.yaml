@@ -15,7 +15,7 @@ spec:
     matchLabels:
       app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
-  replicas: 5
+  replicas: {{ .microserviceReplicas }}
 
   template:
     metadata:
