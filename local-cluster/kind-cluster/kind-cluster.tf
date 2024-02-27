@@ -1,7 +1,8 @@
 resource "kind_cluster" "default" {
-  name       = var.cluster_name
-  node_image = "kindest/node:v${var.kubernetes_version}"
 
+  name = "k8slab"
+
+  node_image     = "kindest/node:v1.29.1"
   wait_for_ready = true
 
   kubeconfig_path = pathexpand("~/.kube/config")
@@ -9,8 +10,9 @@ resource "kind_cluster" "default" {
   # It won't replace the existing file, just will merge them
 
   kind_config {
-    kind        = "Cluster"
+
     api_version = "kind.x-k8s.io/v1alpha4"
+    kind        = "Cluster"
 
     node {
       role = "control-plane"
@@ -22,21 +24,21 @@ resource "kind_cluster" "default" {
         kind: InitConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "${local.controll_plane_node_labels_string}"
+            node-labels: "${var.controll_plane_node_labels}"
         EOF
       ]
 
       dynamic "extra_port_mappings" {
         for_each = var.port_mappings
         content {
-          container_port = tonumber(extra_port_mappings.value.node_port)
-          host_port      = tonumber(extra_port_mappings.value.host_port)
+          container_port = extra_port_mappings.value.node_port
+          host_port      = extra_port_mappings.value.host_port
         }
       }
     }
 
     dynamic "node" {
-      for_each = range(var.worker_nodes)
+      for_each = range(var.worker_node_count)
       content {
         role = "worker"
       }

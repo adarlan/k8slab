@@ -1,0 +1,12 @@
+config:
+  params:
+    server.insecure: true
+
+server:
+  service:
+    type: NodePort
+    nodePortHttp: ${nodePortHttp}
+
+configs:
+  cm:
+    timeout.reconciliation: 30s
