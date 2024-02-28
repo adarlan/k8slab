@@ -133,7 +133,7 @@ services:
       LOG_LEVEL: INFO
       API_URL: http://item-creator:8080/api/items
       MIN_ITERATIONS: 1
-      MAX_ITERATIONS: 50
+      MAX_ITERATIONS: 20
     restart: always
 
   # Fetch items a random number of times, using a random filter for each iteration
@@ -147,7 +147,7 @@ services:
       LOG_LEVEL: INFO
       API_URL: http://item-reader:8080/api/items
       MIN_ITERATIONS: 1
-      MAX_ITERATIONS: 5000
+      MAX_ITERATIONS: 80
     restart: always
 
   # Update items a random number of times, using a random filter and generating a random name for each iteration
@@ -161,7 +161,7 @@ services:
       LOG_LEVEL: INFO
       API_URL: http://item-updater:8080/api/items
       MIN_ITERATIONS: 1
-      MAX_ITERATIONS: 500
+      MAX_ITERATIONS: 40
     restart: always
 
   # Delete items a random number of times, using a random filter for each iteration
@@ -175,7 +175,7 @@ services:
       LOG_LEVEL: INFO
       API_URL: http://item-deleter:8080/api/items
       MIN_ITERATIONS: 1
-      MAX_ITERATIONS: 5
+      MAX_ITERATIONS: 10
     restart: always
 
   # ==========================================================================================================================

@@ -3,15 +3,16 @@ import time
 
 from _env import MONGO_URI, MONGO_DATABASE
 from _logging import logger
-from _metrics import database_latency_seconds
+import _metrics
 
-logger.debug('Connecting to MongoDB', uri='[SENSITIVE]', database=MONGO_DATABASE)
+logger.debug('Connecting to MongoDB', database=MONGO_DATABASE)
 try:
     mongo_client = pymongo.MongoClient(MONGO_URI)
     mongo_database = mongo_client[MONGO_DATABASE]
     collection = mongo_database['items']
+    _metrics.items_total.set(collection.count_documents({}))
 except pymongo.errors.PyMongoError as e:
-    logger.error('Failed to connect to MongoDb', uri='[SENSITIVE]', database=MONGO_DATABASE, error=e)
+    logger.error('Failed to connect to MongoDb', database=MONGO_DATABASE, error=e)
     raise e
 
 class DatabaseException(Exception):
@@ -27,48 +28,77 @@ def ping():
     except pymongo.errors.PyMongoError as e:
         raise DatabaseException('Failed to ping MongoDB', e)
 
-def create(item):
+def create_one_item(item):
+
     document = item.copy()
+    start_time = time.time()
+
     try:
-        start_time = time.time()
         collection.insert_one(document)
-        database_latency_seconds.observe(time.time() - start_time)
     except pymongo.errors.PyMongoError as e:
         raise DatabaseException('Failed to insert document in MongoDB collection', e)
 
-def read(pattern):
+    _metrics.database_latency_seconds.labels(
+        operation='create_one_item'
+        ).observe(time.time() - start_time)
+
+    _metrics.items_total.inc(1)
+
+def read_many_items(pattern):
+
+    filter_query = {"name": {"$regex": pattern}}
     items = []
+    start_time = time.time()
+
     try:
-        start_time = time.time()
-        result = collection.find({"name": {"$regex": pattern}})
-        database_latency_seconds.observe(time.time() - start_time)
+        result = collection.find(filter_query)
     except pymongo.errors.PyMongoError as e:
         raise DatabaseException('Failed to find documents in MongoDB collection', e)
+
+    _metrics.database_latency_seconds.labels(
+        operation='read_many_items'
+        ).observe(time.time() - start_time)
+
     for document in result:
         item = document.copy()
         del item['_id']
         items.append(item)
+
     return items
 
-def update(pattern, name):
+def update_many_items(pattern, name):
+
     filter_query = {"name": {"$regex": pattern}}
     update_query = {'$set': {'name': name}}
+    start_time = time.time()
+
     try:
-        start_time = time.time()
         result = collection.update_many(
             filter=filter_query,
-            update=update_query
-        )
-        database_latency_seconds.observe(time.time() - start_time)
+            update=update_query)
     except pymongo.errors.PyMongoError as e:
         raise DatabaseException('Failed to update documents in MongoDB collection', e)
+
+    _metrics.database_latency_seconds.labels(
+        operation='update_many_items'
+        ).observe(time.time() - start_time)
+
     return result.matched_count
 
-def delete(pattern) -> int:
+def delete_many_items(pattern) -> int:
+
+    filter_query = {"name": {"$regex": pattern}}
+    start_time = time.time()
+
     try:
-        start_time = time.time()
-        result = collection.delete_many({"name": {"$regex": pattern}})
-        database_latency_seconds.observe(time.time() - start_time)
+        result = collection.delete_many(filter_query)
     except pymongo.errors.PyMongoError as e:
         raise DatabaseException('Failed to delete documents in MongoDB collection', e)
+
+    _metrics.database_latency_seconds.labels(
+        operation='delete_many_items'
+        ).observe(time.time() - start_time)
+
+    _metrics.items_total.dec(result.deleted_count)
+
     return result.deleted_count

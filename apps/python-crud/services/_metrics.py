@@ -1,8 +1,20 @@
-from prometheus_client import Counter, Summary
+from prometheus_client import Gauge, Counter, Summary
 
-received_requests          = Counter('received_requests',           'Number of requests received')
-successful_requests        = Counter('successful_requests',         'Number of requests processed successfully')
-failed_requests            = Counter('failed_requests',             'Number of failed attempts to process a request')
-bad_requests               = Counter('bad_requests',                'Number of client malformed requests')
-request_latency_in_seconds = Summary('request_latency_in_seconds',  'Request latency in seconds')
-database_latency_seconds   = Summary('database_latency_seconds', 'Database latency in seconds')
+items_total = Gauge(
+    'pycrud_items_total',
+    'Current number of items')
+
+http_requests_total = Counter(
+    'pycrud_http_requests_total',
+    'Number of HTTP requests',
+    ['method', 'status'])
+
+http_request_duration_seconds = Summary(
+    'pycrud_http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'status'])
+
+database_latency_seconds = Summary(
+    'pycrud_database_latency_seconds',
+    'Database latency in seconds',
+    ['operation'])

@@ -2,7 +2,7 @@ import re
 from flask import request, jsonify
 
 from _logging import logger
-from _database import create, DatabaseException
+from _database import create_one_item, DatabaseException
 from _flask import app, serve
 
 @app.route('/api/items', methods=['POST'])
@@ -19,7 +19,7 @@ def create_item():
     item = {'name': name}
 
     try:
-        create(item)
+        create_one_item(item)
     except DatabaseException as e:
         response = {'error': 'Failed to create item'}
         logger.error('Failed to create item in database', item=item, error=e)

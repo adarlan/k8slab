@@ -2,7 +2,7 @@ import re
 from flask import jsonify
 
 from _logging import logger
-from _database import read, DatabaseException
+from _database import read_many_items, DatabaseException
 from _flask import app, serve
 
 @app.route('/api/items/<regex>', methods=['GET'])
@@ -16,7 +16,7 @@ def fetch_items(regex):
         return jsonify(response), 400
 
     try:
-        items = read(regex_pattern)
+        items = read_many_items(regex_pattern)
     except DatabaseException as e:
         response = {'error': 'Failed to fetch items'}
         logger.error('Failed to read items from database', regex=regex, error=e, response=response)

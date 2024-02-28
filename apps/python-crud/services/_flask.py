@@ -13,26 +13,23 @@ app = Flask(__name__)
 
 @app.before_request
 def before_request():
-    _metrics.received_requests.inc()
     request.start_time = time.time()
 
 @app.after_request
 def after_request(response):
+    if not request.path == '/healthz':
 
-    _metrics.request_latency_in_seconds.observe(time.time() - request.start_time)
+        _metrics.http_request_duration_seconds.labels(
+            method=request.method,
+            status=response.status_code
+        ).observe(time.time() - request.start_time)
 
-    if response.status_code == 200:
-        _metrics.successful_requests.inc()
-
-    elif response.status_code == 400:
-        _metrics.bad_requests.inc()
-
-    elif response.status_code == 500:
-        _metrics.failed_requests.inc()
+        _metrics.http_requests_total.labels(
+            method=request.method,
+            status=response.status_code
+        ).inc()
 
     return response
-
-# TODO how to prevent before_request and after_request being called for /healthz requests?
 
 @app.route('/healthz')
 def healthz():

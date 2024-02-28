@@ -2,7 +2,7 @@ import re
 from flask import jsonify
 
 from _logging import logger
-from _database import delete, DatabaseException
+from _database import delete_many_items, DatabaseException
 from _flask import app, serve
 
 @app.route('/api/items/<regex>', methods=['DELETE'])
@@ -16,7 +16,7 @@ def delete_items(regex):
         return jsonify(response), 400
 
     try:
-        deleted_count = delete(regex_pattern)
+        deleted_count = delete_many_items(regex_pattern)
     except DatabaseException as e:
         response = {'error': 'Failed to delete items'}
         logger.error('Failed to delete items from database', regex=regex, error=e, response=response)

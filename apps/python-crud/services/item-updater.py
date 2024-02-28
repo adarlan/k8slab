@@ -2,7 +2,7 @@ import re
 from flask import request, jsonify
 
 from _logging import logger
-from _database import update, DatabaseException
+from _database import update_many_items, DatabaseException
 from _flask import app, serve
 
 @app.route('/api/items/<regex>', methods=['PUT'])
@@ -23,7 +23,7 @@ def update_item(regex):
         return jsonify(response), 400
 
     try:
-        updated_count = update(regex_pattern, name)
+        updated_count = update_many_items(regex_pattern, name)
     except DatabaseException as e:
         response = {'error': 'Failed to update items'}
         logger.error('Failed to update items in database', regex=regex, name=name, error=e, response=response)
