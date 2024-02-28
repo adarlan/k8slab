@@ -1,7 +1,3 @@
-variable "node_port" {
-  type = string
-}
-
 variable "release_name" {
   type = string
 }
