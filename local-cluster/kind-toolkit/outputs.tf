@@ -1,4 +1,4 @@
-output "info" {
+output "secrets" {
 
   sensitive = true
 
@@ -11,8 +11,8 @@ output "info" {
         url      = "http://localhost:${var.port_mappings_by_name.argocd.host_port}"
         username = "admin"
         password = module.argo_cd[0].initial_admin_password
-        host = "localhost"
-        port = var.port_mappings_by_name.argocd.host_port
+        host     = "localhost"
+        port     = var.port_mappings_by_name.argocd.host_port
       }
     } : {},
 
