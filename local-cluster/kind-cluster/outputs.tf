@@ -1,25 +1,12 @@
-output "kubeconfig_path" {
-  value = kind_cluster.default.kubeconfig_path
-}
+output "secrets" {
 
-output "ca_certificate" {
-  description = "Client verifies the server certificate with this CA cert."
-  value       = kind_cluster.default.cluster_ca_certificate
-  sensitive   = true
-}
-
-output "client_key" {
-  value     = kind_cluster.default.client_key
   sensitive = true
-}
 
-output "client_certificate" {
-  value     = kind_cluster.default.client_certificate
-  sensitive = true
-}
-
-output "endpoint" {
-  description = "Kubernetes APIServer endpoint."
-  value       = kind_cluster.default.endpoint
-  sensitive   = true
+  value = {
+    kubeconfig_path    = kind_cluster.default.kubeconfig_path
+    ca_certificate     = kind_cluster.default.cluster_ca_certificate
+    client_key         = kind_cluster.default.client_key
+    client_certificate = kind_cluster.default.client_certificate
+    endpoint           = kind_cluster.default.endpoint
+  }
 }
