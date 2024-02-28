@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-info() {
+__main__() {
     kubectl cluster-info
     echo
     echo "--------------------------------------------------------------------------------"
@@ -26,37 +26,37 @@ info() {
     echo
     echo -e "\e[1;34mMANAGEMENT CONSOLES\e[0m"
     echo
-    echo "Argo CD: $(info_value kind-toolkit argocd.url)"
-    echo "Username: $(info_value kind-toolkit argocd.username)"
-    echo "Password: $(info_value kind-toolkit argocd.password)"
+    echo "Argo CD: $(get_toolkit_secret argocd.url)"
+    echo "Username: $(get_toolkit_secret argocd.username)"
+    echo "Password: $(get_toolkit_secret argocd.password)"
     echo
-    echo "Prometheus: $(info_value kind-toolkit prometheus.url)"
+    echo "Prometheus: $(get_toolkit_secret prometheus.url)"
     echo
-    echo "Grafana: $(info_value kind-toolkit kubeprometheus_grafana.url)"
-    echo "Username: $(info_value kind-toolkit kubeprometheus_grafana.username)"
-    echo "Password: $(info_value kind-toolkit kubeprometheus_grafana.password)"
-    echo
-    echo "--------------------------------------------------------------------------------"
-    echo
-    echo -e "\e[1;34mHELLO WORLD APPLICATION\e[0m"
-    echo
-    echo "Hello, Devs! (development)"
-    echo "http://dev.localhost/hello"
-    echo "http://dev.localhost/hello/healthz"
-    echo
-    echo "Hello, QA Folks! (staging)"
-    echo "http://stg.localhost/hello"
-    echo "http://stg.localhost/hello/healthz"
-    echo
-    echo "Hello, Users! (production)"
-    echo "http://hello.localhost"
-    echo "http://hello.localhost/healthz"
+    echo "Grafana: $(get_toolkit_secret kubeprometheus_grafana.url)"
+    echo "Username: $(get_toolkit_secret kubeprometheus_grafana.username)"
+    echo "Password: $(get_toolkit_secret kubeprometheus_grafana.password)"
     echo
     echo "--------------------------------------------------------------------------------"
+    # echo
+    # echo -e "\e[1;34mHELLO WORLD APPLICATION\e[0m"
+    # echo
+    # echo "Hello, Devs! (development)"
+    # echo "http://dev.localhost/hello"
+    # echo "http://dev.localhost/hello/healthz"
+    # echo
+    # echo "Hello, QA Folks! (staging)"
+    # echo "http://stg.localhost/hello"
+    # echo "http://stg.localhost/hello/healthz"
+    # echo
+    # echo "Hello, Users! (production)"
+    # echo "http://hello.localhost"
+    # echo "http://hello.localhost/healthz"
+    # echo
+    # echo "--------------------------------------------------------------------------------"
 }
 
-info_value() {
-    jq --raw-output .info.value.${2} ${1}-output.json
+get_toolkit_secret() {
+    jq --raw-output .${1} toolkit-secrets.json
 }
 
-info
+__main__

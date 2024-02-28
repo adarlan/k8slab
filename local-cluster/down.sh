@@ -1,15 +1,15 @@
 #!/bin/bash
-set -ex
+set -e
 
 down() {
-    terraform_config
-    terraform_apply_config_adapter
-    terraform_destroy_kind_toolkit
+    # terraform_config
+    # terraform_apply_config_adapter
+    # terraform_destroy_kind_toolkit
     terraform_destroy_kind_cluster
-    git_clean config-adapter
+    # git_clean config-adapter
     # git_clean kind-toolkit
     # git_clean kind-cluster
-    git_clean .
+    # git_clean .
 }
 
 terraform_config() {
@@ -20,7 +20,7 @@ terraform_config() {
 
 terraform_apply_config_adapter() {
     terraform -chdir=config-adapter init
-    TF_LOG="INFO" \
+    # TF_LOG="INFO" \
     terraform -chdir=config-adapter apply -var-file=./../config.tfvars -auto-approve
     terraform -chdir=config-adapter output -json kind_cluster_config > kind-cluster-config.json
     terraform -chdir=config-adapter output -json kind_toolkit_config > kind-toolkit-config.json
@@ -28,7 +28,7 @@ terraform_apply_config_adapter() {
 
 terraform_destroy_kind_toolkit() {
     terraform -chdir=kind-toolkit init
-    TF_LOG="INFO" \
+    # TF_LOG="INFO" \
     terraform -chdir=kind-toolkit destroy -var-file=./../kind-toolkit-config.json
     echo '{}' > kind-toolkit-config.json
     echo '{}' > kind-toolkit-output.json
@@ -36,8 +36,8 @@ terraform_destroy_kind_toolkit() {
 
 terraform_destroy_kind_cluster() {
     terraform -chdir=kind-cluster init
-    TF_LOG="INFO" \
-    terraform -chdir=kind-cluster destroy -var-file=./../kind-cluster-config.json
+    # TF_LOG="INFO" \
+    terraform -chdir=kind-cluster destroy -var-file=./../cluster-config.json
     echo '{}' > kind-cluster-config.json
     echo '{}' > kind-cluster-output.json
 }
