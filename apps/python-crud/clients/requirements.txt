@@ -1,2 +1,2 @@
 structlog==24.1.0
-requests==2.25.1
+requests==2.31.0
