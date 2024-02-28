@@ -6,24 +6,34 @@ locals {
   modules = {
     for m in [
       {
-        name    = "ingress_nginx",
-        enabled = try(var.ingress_nginx.enabled, false)
+        name         = "ingress_nginx",
+        enabled      = try(var.ingress_nginx.enabled, false)
+        release_name = "ingress-nginx"
+        namespace    = "ingress"
       },
       {
-        name    = "argo_cd",
-        enabled = try(var.argo_cd.enabled, false)
+        name         = "argo_cd",
+        enabled      = try(var.argo_cd.enabled, false)
+        release_name = "argo-cd"
+        namespace    = "argocd"
       },
       {
-        name    = "kube_prometheus_stack",
-        enabled = try(var.kube_prometheus_stack.enabled, false)
+        name         = "kube_prometheus_stack",
+        enabled      = try(var.kube_prometheus_stack.enabled, false)
+        release_name = "kube-prometheus-stack"
+        namespace    = "kubeprometheus"
       },
       {
-        name    = "loki_stack",
-        enabled = try(var.loki_stack.enabled, false)
+        name         = "loki_stack",
+        enabled      = try(var.loki_stack.enabled, false)
+        release_name = "loki-stack"
+        namespace    = "loki"
       },
       {
-        name    = "trivy_operator",
-        enabled = try(var.trivy_operator.enabled, false)
+        name         = "trivy_operator",
+        enabled      = try(var.trivy_operator.enabled, false)
+        release_name = "trivy-operator"
+        namespace    = "trivy"
       },
     ] : m.name => m
   }
