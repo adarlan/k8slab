@@ -2,14 +2,6 @@
 set -e
 source config.sh
 
-# secrets
-# NAME                                  TYPE                 DATA
-# argocd-image-updater-secret           Opaque               0   
-# argocd-initial-admin-secret           Opaque               1   
-# argocd-notifications-secret           Opaque               0   
-# argocd-secret                         Opaque               5   
-# sh.helm.release.v1.{RELEASE_NAME}.v1  helm.sh/release.v1  1   
-
 HOST=localhost
 PORT=8001
 USERNAME=admin
