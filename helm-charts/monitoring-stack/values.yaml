@@ -1,23 +1,31 @@
-loki-stack:
-  grafana:
-    enabled: false
-  promtail:
+loki:
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: 'filesystem'
+singleBinary:
+  replicas: 1
 
-    # Avoiding the error creating promtail failed to make file target manager: too many open files
-    initContainer:
-    # -- Specifies whether the init container for setting inotify max user instances is to be enabled
-    - name: init
-      # -- Docker registry, image and tag for the init container image
-      image: docker.io/busybox:1.33
-      # -- Docker image pull policy for the init container image
-      imagePullPolicy: IfNotPresent
-      # -- The inotify max user instances to configure
-      command:
-        - sh
-        - -c
-        - sysctl -w fs.inotify.max_user_instances=1024
-      securityContext:
-        privileged: true
+# loki-stack: # DEPRECATED
+#   grafana:
+#     enabled: false
+#   promtail:
+
+#     # Avoiding the error creating promtail failed to make file target manager: too many open files
+#     initContainer:
+#     # -- Specifies whether the init container for setting inotify max user instances is to be enabled
+#     - name: init
+#       # -- Docker registry, image and tag for the init container image
+#       image: docker.io/busybox:1.33
+#       # -- Docker image pull policy for the init container image
+#       imagePullPolicy: IfNotPresent
+#       # -- The inotify max user instances to configure
+#       command:
+#         - sh
+#         - -c
+#         - sysctl -w fs.inotify.max_user_instances=1024
+#       securityContext:
+#         privileged: true
 
 kube-prometheus-stack:
   # prometheus:
