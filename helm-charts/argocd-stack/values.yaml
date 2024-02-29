@@ -1,0 +1,12 @@
+argo-cd:
+  config:
+    params:
+      server.insecure: true
+  server:
+    service:
+      type: NodePort
+      nodePortHttp: 30001
+      nodePortHttps: 30101
+  configs:
+    cm:
+      timeout.reconciliation: 30s
