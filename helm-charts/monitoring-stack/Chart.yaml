@@ -3,6 +3,11 @@ name: k8slab-monitoring
 version: 0.1.0
 
 dependencies:
+
   - name: loki-stack
     repository: https://grafana.github.io/helm-charts
     version: 2.10.1
+
+  - name: kube-prometheus-stack
+    repository: https://prometheus-community.github.io/helm-charts
+    version: 56.6.2

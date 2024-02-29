@@ -1,6 +1,6 @@
 loki-stack:
   grafana:
-    enabled: false
+    enabled: true
   promtail:
 
     # Avoiding the error creating promtail failed to make file target manager: too many open files
@@ -18,3 +18,13 @@ loki-stack:
         - sysctl -w fs.inotify.max_user_instances=1024
       securityContext:
         privileged: true
+
+# kube-prometheus-stack:
+#   prometheus:
+#     service:
+#       type: NodePort
+#       nodePort: ${prometheusNodePort}
+#   grafana:
+#     service:
+#       type: NodePort
+#       nodePort: ${grafanaNodePort}
