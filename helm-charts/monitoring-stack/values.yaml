@@ -1,6 +1,6 @@
 loki-stack:
   grafana:
-    enabled: true
+    enabled: false
   promtail:
 
     # Avoiding the error creating promtail failed to make file target manager: too many open files
@@ -19,12 +19,13 @@ loki-stack:
       securityContext:
         privileged: true
 
-# kube-prometheus-stack:
-#   prometheus:
-#     service:
-#       type: NodePort
-#       nodePort: ${prometheusNodePort}
-#   grafana:
-#     service:
-#       type: NodePort
-#       nodePort: ${grafanaNodePort}
+kube-prometheus-stack:
+  # prometheus:
+  #   service:
+  #     type: NodePort
+  #     nodePort: ${prometheusNodePort}
+  grafana:
+    enabled: false
+    # service:
+    #   type: NodePort
+    #   nodePort: ${grafanaNodePort}
