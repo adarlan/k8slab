@@ -2,22 +2,22 @@ microservices:
 
   - microserviceName: item-creator
     microserviceReplicas: 4
-    clientMaxIterations: 50
+    clientMaxIterations: 500
     clientIntervalInMinutes: 3
 
   - microserviceName: item-reader
-    microserviceReplicas: 8
-    clientMaxIterations: 500
+    microserviceReplicas: 16
+    clientMaxIterations: 5000
     clientIntervalInMinutes: 1
 
   - microserviceName: item-updater
-    microserviceReplicas: 6
-    clientMaxIterations: 100
+    microserviceReplicas: 8
+    clientMaxIterations: 50
     clientIntervalInMinutes: 2
 
   - microserviceName: item-deleter
     microserviceReplicas: 2
-    clientMaxIterations: 10
+    clientMaxIterations: 5
     clientIntervalInMinutes: 4
 
 logLevel: INFO

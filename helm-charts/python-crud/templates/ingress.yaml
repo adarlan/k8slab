@@ -27,7 +27,7 @@ spec:
         backend:
           service:
             name: {{ printf "%s-%s" $releaseName .microserviceName }}
-            port: 
+            port:
               name: web
       {{ end }}
 
