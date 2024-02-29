@@ -1,4 +1,4 @@
-ingress-nginx:
+ingressNginx:
   controller:
     hostPort:
       enabled: true
