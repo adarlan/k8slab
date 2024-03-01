@@ -3,7 +3,19 @@ set -e
 source config.sh
 
 if helm list --short -n $namespace | grep -q "^$releaseName$"; then
-    helm upgrade $releaseName -n $namespace --create-namespace --wait --values $valuesFile $chartPath
+    helm upgrade $releaseName \
+        --namespace $namespace --create-namespace \
+        --values $valuesFile \
+        --wait \
+        $chartPath
+        # --dependency-update
+        # --wait-for-jobs
 else
-    helm install $releaseName -n $namespace --create-namespace --wait --values $valuesFile $chartPath
+    helm install $releaseName \
+        --namespace $namespace --create-namespace \
+        --values $valuesFile \
+        --wait \
+        $chartPath
+        # --dependency-update
+        # --wait-for-jobs
 fi

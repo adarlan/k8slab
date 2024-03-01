@@ -2,7 +2,7 @@
 set -e
 source config.sh
 
-helm uninstall $releaseName -n $namespace --wait --debug
+helm uninstall $releaseName -n $namespace --wait
 
 kubectl delete crd \
     applications.argoproj.io \
