@@ -8,3 +8,9 @@ stableImageTag: master
 unstableImageTag: master
 
 _servicePortNumber: 80
+
+ingress:
+  enabled: false
+
+serviceMonitor:
+  enabled: false
