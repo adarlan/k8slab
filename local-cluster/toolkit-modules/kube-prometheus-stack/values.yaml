@@ -1,9 +1,0 @@
-prometheus:
-  service:
-    type: NodePort
-    nodePort: ${prometheusNodePort}
-
-grafana:
-  service:
-    type: NodePort
-    nodePort: ${grafanaNodePort}
