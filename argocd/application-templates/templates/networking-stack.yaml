@@ -1,28 +1,27 @@
+{{ if .Values.networkingStack.enabled }}
+
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 
 metadata:
-  name: monitoring-stack
+  name: networking-stack
   namespace: argocd
-  # finalizers:
-  # - resources-finalizer.argocd.argoproj.io
 
 spec:
   project: default
-  # TODO project: cluster-toolkit
 
   source:
     repoURL: https://github.com/adarlan/k8slab.git
-    path: helm-charts/monitoring-stack
+    path: helm-charts/networking-stack
     targetRevision: master
     helm:
-      releaseName: monitoring-stack
-      # valueFiles:
-      # - values-kind.yaml
+      releaseName: networking
+      valuesObject:
+{{ toYaml .Values.networkingStack.values | indent 8 }}
 
   destination:
     name: in-cluster
-    namespace: monitoring
+    namespace: networking
 
   syncPolicy:
     automated:
@@ -30,4 +29,5 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
+
+{{ end }}

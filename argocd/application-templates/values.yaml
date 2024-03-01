@@ -1,0 +1,46 @@
+networkingStack:
+  enabled: true # if you disable the application, it won't be deleted
+  values:
+    ingress-nginx:
+      enabled: true
+
+pythonCrud:
+  enabled: true # if you disable the application, it won't be deleted, because it won't be applied
+  applications:
+  - name: python-crud
+    chartVersion: master
+    namespace: python-crud
+    values:
+
+      ingress:
+        enabled: true
+        host: crud.localhost
+        basePath: ""
+
+      serviceMonitor:
+        enabled: false
+
+        prometheusOperatorReleaseName: monitoring-stack
+        # TODO => prometheusRelease: monitoring-stack
+
+      microservices:
+
+        - microserviceName: item-creator
+          microserviceReplicas: 1
+          clientMaxIterations: 10
+          clientIntervalInMinutes: 5
+
+        - microserviceName: item-reader
+          microserviceReplicas: 1
+          clientMaxIterations: 10
+          clientIntervalInMinutes: 5
+
+        - microserviceName: item-updater
+          microserviceReplicas: 1
+          clientMaxIterations: 10
+          clientIntervalInMinutes: 5
+
+        - microserviceName: item-deleter
+          microserviceReplicas: 1
+          clientMaxIterations: 10
+          clientIntervalInMinutes: 5
