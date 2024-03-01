@@ -24,12 +24,12 @@ resource "kind_cluster" "default" {
         kind: InitConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "${var.controll_plane_node_labels}"
+            node-labels: "${var.control_plane_node_labels}"
         EOF
       ]
 
       dynamic "extra_port_mappings" {
-        for_each = var.port_mappings
+        for_each = var.control_plane_port_mappings
         content {
           container_port = extra_port_mappings.value.node_port
           host_port      = extra_port_mappings.value.host_port

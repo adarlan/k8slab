@@ -3,11 +3,7 @@ set -e
 
 __main__() {
     stop_and_remove_kind_cluster_nodes
-    git_clean config-adapter
-    git_clean kind-cluster
-    git_clean kind-toolkit
-    git_clean .
-    rm -rf app-manifests
+    remove_gitignored_files
 }
 
 stop_and_remove_kind_cluster_nodes() {
@@ -17,12 +13,9 @@ stop_and_remove_kind_cluster_nodes() {
     done
 }
 
-git_clean() {
-    BACK=$(pwd)
-    cd $1
+remove_gitignored_files() {
     git clean -Xf
     rm -rf .terraform
-    cd $BACK
 }
 
 __main__
