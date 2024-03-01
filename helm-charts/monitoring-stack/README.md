@@ -7,22 +7,31 @@ helm dependency update
 
 watch -n -1 kubectl get all -n monitoring
 
-helm install monitoring-stack . -n monitoring --debug --values values.yaml
+helm install monitoring-stack . -n monitoring --create-namespace --values values.yaml
 
-helm upgrade monitoring-stack . -n monitoring --debug --values values.yaml
+helm upgrade monitoring-stack . -n monitoring --values values.yaml
 
-kubectl port-forward -n monitoring service/monitoring-stack-loki 3100
-curl http://localhost:3100/ready
+echo $(kubectl get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+
+kubectl port-forward -n monitoring service/monitoring-stack-grafana 8080:80
 
 helm uninstall monitoring-stack . -n monitoring --debug
 
 helm template monitoring-stack . -n monitoring --values values.yaml > manifest.yaml
 ```
 
-## Ref
+## Grafana
 
-Loki Docs - Loki HTTP API
-https://grafana.com/docs/loki/latest/reference/api/
+Open Grafana: http://localhost:8080
+
+Add data source >> Loki
+
+- Connection URL: http://loki-gateway:80
+- HTTP headers: X-Scope-OrgID=foobar
+
+Save & test
+
+## Ref
 
 Loki Source Code
 https://github.com/grafana/loki
