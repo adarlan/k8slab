@@ -1,4 +1,4 @@
-worker_node_count         = 3
+worker_node_count         = 2
 control_plane_node_labels = "ingress-ready=true"
 
 control_plane_port_mappings = [
