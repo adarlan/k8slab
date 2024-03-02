@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex
 
 __main__() {
     stop_and_remove_kind_cluster_nodes
