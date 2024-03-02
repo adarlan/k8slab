@@ -1,5 +1,5 @@
 kube-prometheus-stack:
-  enabled: false
+  enabled: true
   grafana:
     enabled: false
 
