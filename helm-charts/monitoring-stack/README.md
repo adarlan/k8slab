@@ -1,26 +1,31 @@
-# Monitoring Stack Helm Chart
+# Monitoring-Stack Helm Chart
 
-## Handy Commands
+## Commands
 
 ```bash
 helm dependency update
 
+helm template monitoring-stack . -n monitoring --values values.yaml > manifest.yaml
+```
+
+```bash
 watch -n -1 kubectl get all -n monitoring
 
 helm install monitoring-stack . -n monitoring --create-namespace --values values.yaml
 
 helm upgrade monitoring-stack . -n monitoring --values values.yaml
 
-echo $(kubectl get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
-
-kubectl port-forward -n monitoring service/monitoring-stack-grafana 8080:80
-
 helm uninstall monitoring-stack . -n monitoring --debug
-
-helm template monitoring-stack . -n monitoring --values values.yaml > manifest.yaml
 ```
 
-## Grafana
+```bash
+echo $(kubectl get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+
+# using port-forward while we don't have ingress configuration
+kubectl port-forward -n monitoring service/monitoring-stack-grafana 8080:80
+```
+
+## Add Grafana data sources
 
 Open Grafana: http://localhost:8080
 
@@ -28,8 +33,11 @@ Add data source >> Loki
 
 - Connection URL: http://loki-gateway:80
 - HTTP headers: X-Scope-OrgID=foobar
+- Save & test
 
-Save & test
+Add data source >> Prometheus
+
+- ???
 
 ## Ref
 
@@ -53,3 +61,11 @@ https://hackernoon.com/grafana-loki-architecture-summary-and-running-in-kubernet
 
 Promtail Helm Chart
 https://github.com/grafana/helm-charts/tree/main/charts/promtail
+
+## TODO
+
+RepeatedResourceWarning - After sync, Argo CD display 3 warnings
+
+Add Grafana data sources in the values.yaml
+
+Ingress configuration for Grafana and Prometheus (Loki too?)
