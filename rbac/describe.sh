@@ -2,14 +2,14 @@
 set -ex
 
 kubectl describe namespace dev
-kubectl describe role developer -n dev
 
+kubectl describe role developer -n dev
 kubectl describe clusterrole administrator
 
 kubectl describe csr janeops
 kubectl describe csr johndev
 
-kubectl describe rolebinding developer-johndev -n dev
-kubectl describe clusterrolebinding administrator-janeops -n dev
+kubectl describe rolebinding johndev-developer -n dev
+kubectl describe clusterrolebinding janeops-administrator
 
 kubectl config view
