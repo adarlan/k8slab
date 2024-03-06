@@ -5,9 +5,7 @@ resource "kind_cluster" "default" {
   node_image     = "kindest/node:v1.29.1"
   wait_for_ready = true
 
-  kubeconfig_path = pathexpand("~/.kube/config")
-  # TODO create variable and use this value as defaul
-  # It won't replace the existing file, just will merge them
+  kubeconfig_path = "kind.kubeconfig"
 
   kind_config {
 
