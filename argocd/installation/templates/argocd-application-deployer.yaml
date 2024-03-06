@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-application-deployer
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: argocd-application-deployer
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    kubernetes.io/service-account.name: argocd-application-deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-application-deployer
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: ["argoproj.io"]
+  resources: ["applications", "applicationsets"]
+  verbs: ["*"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-application-deployer
+  namespace: {{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: argocd-application-deployer
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: argocd-application-deployer
+  apiGroup: rbac.authorization.k8s.io

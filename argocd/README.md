@@ -15,11 +15,19 @@ fi
 
 <!-- watch -n 1 kubectl get pod -n argocd -->
 
+## Setting kubeconfig for application deployer
+
+```bash
+kubectl config use-context k8slab-root
+kubectl config set-credentials k8slab-deployer --token=$(kubectl get secret argocd-application-deployer -n argocd -o jsonpath='{.data.token}' | base64 --decode)
+kubectl config set-context k8slab-deployer --cluster=k8slab --user=k8slab-deployer --namespace=argocd
+```
+
 <!-- FUNCTION toolkit -->
 ## Deploy Toolkit Applications
 
 ```bash
-# TODO kubectl config use-context k8slab-application-deployer
+kubectl config use-context k8slab-deployer
 KUBECTL_APPLYSET=true kubectl apply -n argocd --prune --applyset=toolkit-applications -f toolkit-applications/
 
 # KUBECTL_APPLYSET=true kubectl delete -n argocd --applyset=toolkit-applications -f toolkit-applications/
