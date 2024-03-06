@@ -1,4 +1,4 @@
-# Cluster Toolkit
+# Cluster Toolkit's Helm Charts
 
 <!-- FUNCTION build -->
 ## Update dependencies
@@ -51,18 +51,6 @@ else
 fi
 ```
 
-### Installing ArgoCD-Stack
-
-```bash
-cd argocd-stack
-
-if helm list --short -n argocd | grep -q '^argocd-stack$'; then
-    helm upgrade argocd-stack -n argocd --values values.yaml .
-else
-    helm install argocd-stack -n argocd --create-namespace --values values.yaml .
-fi
-```
-
 ### Installing Monitoring-Stack
 
 ```bash
@@ -91,7 +79,6 @@ fi
 ## Watch pods
 
 ```bash
-watch -n 1 kubectl get pod -n argocd
 watch -n 1 kubectl get pod -n networking
 watch -n 1 kubectl get pod -n monitoring
 watch -n 1 kubectl get pod -n security
@@ -99,18 +86,6 @@ watch -n 1 kubectl get pod -n security
 
 <!-- FUNCTION postinstall -->
 ## Post-install
-
-### ArgoCD
-
-[http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
-
-```bash
-# get initial admin password
-echo $(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
-
-# argocd login (using the --grpc-web flag because ingressGrpc is not configured)
-argocd login --grpc-web --insecure argocd.localhost --username admin --password $(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
-```
 
 ### Grafana
 
@@ -139,7 +114,6 @@ Add data source >> Prometheus
 ```bash
 kubectl config use-context k8slab-root
 
-helm uninstall argocd-stack -n argocd
 helm uninstall networking-stack -n networking
 helm uninstall monitoring-stack -n monitoring
 helm uninstall security-stack -n security

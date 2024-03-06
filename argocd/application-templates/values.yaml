@@ -1,9 +1,3 @@
-networkingStack:
-  enabled: true # if you disable the application, it won't be deleted
-  values:
-    ingress-nginx:
-      enabled: true
-
 pythonCrud:
   enabled: true # if you disable the application, it won't be deleted, because it won't be applied
   applications:

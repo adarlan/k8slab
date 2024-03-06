@@ -1,10 +1,8 @@
-{{ if .Values.networkingStack.enabled }}
-
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 
 metadata:
-  name: networking-stack
+  name: security-stack
   namespace: argocd
 
 spec:
@@ -12,22 +10,21 @@ spec:
 
   source:
     repoURL: https://github.com/adarlan/k8slab.git
-    path: helm-charts/networking-stack
+    path: helm-charts/security-stack
     targetRevision: master
     helm:
-      releaseName: networking
+      releaseName: security
       valuesObject:
-{{ toYaml .Values.networkingStack.values | indent 8 }}
+        ingress-nginx:
+          enabled: true
 
   destination:
     name: in-cluster
-    namespace: networking
+    namespace: security
 
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # automated:
+    #   prune: true
+    #   selfHeal: true
     syncOptions:
       - CreateNamespace=true
-
-{{ end }}
