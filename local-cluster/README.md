@@ -20,7 +20,7 @@ terraform init
 terraform apply
 ```
 
-## Increasing the maximum number of file system notification subscribers
+## Setting the maximum number of file system notification subscribers
 
 Applications can use the `fs.inotify` Linux kernel subsystem to register for notifications when specific files or directories are modified, accessed, or deleted.
 Let's increase the value of the `fs.inotify.max_user_instances` kernel parameter to prevent some containers in the monitoring stack from crashing due to "too many open files" while watching for changes in the log files.
@@ -33,6 +33,34 @@ if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
 fi
 ```
 
+## Setting kubeconfig cluster
+
+```bash
+docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt ca.crt
+# terraform output -raw ca_certificate > ca.crt
+
+kubectl config set-cluster k8slab --server=$(terraform output -raw endpoint) --certificate-authority=ca.crt --embed-certs=true
+```
+
+## Setting kubeconfig root user and context
+
+```bash
+terraform output -raw root_user_key > root.key
+terraform output -raw root_user_certificate > root.crt
+
+kubectl config set-credentials k8slab-root --client-key=root.key --client-certificate=root.crt --embed-certs=true
+kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
+
+kubectl config use-context k8slab-root
+```
+
+## Cluster info and nodes
+
+```bash
+kubectl cluster-info
+kubectl get nodes
+```
+
 <!-- FUNCTION destroy -->
 ## Destroying the cluster
 
@@ -43,13 +71,13 @@ terraform destroy
 <!-- FUNCTION clean -->
 ## Clean
 
+Stop and remove cluster nodes, remove Terraform files, remove keys and certificates.
+
 ```bash
-# Stop and remove KinD cluster "nodes"
 docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_name; do
     docker stop "$container_name" >/dev/null 2>&1
     docker rm "$container_name" >/dev/null 2>&1
 done
 
-# Remove Terraform files
 git clean -Xfd
 ```
