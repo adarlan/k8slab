@@ -1,0 +1,10 @@
+apiVersion: v2
+name: security-stack
+version: 0.1.0
+
+dependencies:
+
+  - name: trivy-operator
+    repository: https://aquasecurity.github.io/helm-charts/
+    version: 0.20.6
+    condition: trivy-operator.enabled
