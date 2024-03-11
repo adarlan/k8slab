@@ -1,0 +1,7 @@
+script.sh
+*.key
+*.csr
+*-csr.yaml
+*.crt
+*.token
+*-endpoint.txt
