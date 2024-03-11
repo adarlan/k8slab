@@ -15,6 +15,7 @@ resource "helm_release" "networking_stack" {
 }
 
 resource "helm_release" "argocd_stack" {
+  depends_on = [ helm_release.networking_stack ]
 
   name = "argocd-stack"
 
@@ -47,6 +48,7 @@ resource "helm_release" "security_stack" {
 }
 
 resource "helm_release" "monitoring_stack" {
+  depends_on = [ helm_release.networking_stack ]
 
   name = "monitoring-stack"
 
