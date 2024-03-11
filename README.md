@@ -15,241 +15,305 @@ A collection of components designed to simplify the provisioning and management 
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
 - [Docker Engine](https://docs.docker.com/engine/) for containerization of applications.
 
-## Quick Start
+## Configuring Terraform
 
-Use Terraform to quickly set up a local Kubernetes cluster with essential tools like Argo CD, Ingress NGINX, Prometheus, Grafana, and more. Deploy a Hello World application in just a few steps to learn about CI/CD, service routing, observability, and security.
-
-### 1. Clone this repository
-
-```shell
-git clone https://github.com/adarlan/k8slab.git
+```bash
+tfenv install 1.7.3
+tfenv use 1.7.3
 ```
 
-### 2. Navigate to the local-cluster directory inside the repository
+## Setting the maximum number of file system notification subscribers
 
-```shell
-cd k8slab/local-cluster
+Applications can use the `fs.inotify` Linux kernel subsystem to register for notifications when specific files or directories are modified, accessed, or deleted.
+
+Let's increase the value of the `fs.inotify.max_user_instances` parameter to prevent some containers in the monitoring stack from crashing due to "too many open files" while watching for changes in the log files.
+
+Since both host and containers share the same kernel, configuring it on the host also applies to the Docker containers that KinD uses as cluster nodes, and also to the pod's containers running inside those nodes.
+
+This value is reset when the system restarts.
+
+```bash
+if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
+  sudo sysctl -w fs.inotify.max_user_instances=1024
+fi
 ```
 
-### 3. Create the local Kubernetes cluster with Terraform
+## Provisioning local cluster (~2 minutes)
 
-Execute the following `terraform` commands to create a KinD (Kubernetes-in-Docker) cluster in your local environment.
-You could use the `kind` CLI, but if you plan to use Terraform in production you should use it in development too.
+Provisioning a KinD (Kubernetes-in-Docker) cluster in the local environment using Terraform.
+You could use the `kind` CLI to create the cluster, but to make it more like a real environment, we will use Terraform.
 
-```shell
-terraform -chdir=kind-cluster init
-terraform -chdir=kind-cluster apply -var-file=../kind-cluster.tfvars -var-file=../port-mappings.tfvars
+```bash
+terraform -chdir=local-cluster init
+
+TF_LOG="INFO" \
+terraform -chdir=local-cluster apply -auto-approve
 ```
 
-Once Terraform completes its tasks, you can use `kubectl` to manage your cluster directly from the command line.
+## Retrieving cluster credentials
 
-```txt
-$ kubectl get nodes
-NAME                   STATUS   ROLES           AGE     VERSION
-k8slab-control-plane   Ready    control-plane   6m25s   v1.29.1
-k8slab-worker          Ready    <none>          5m51s   v1.29.1
-...
+The directory `/etc/kubernetes/pki/` of a control-plane node typically contains the Public Key Infrastructure (PKI) assets used by the Kubernetes control-plane components for secure communication and authentication within the cluster.
+
+```bash
+# Retrieving cluster's Certificate Authority (CA) key and certificate
+docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.key cluster-ca.key
+docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt cluster-ca.crt
+
+# Retrieving cluster's endpoint
+terraform -chdir=local-cluster output -raw endpoint > cluster-endpoint.txt
+
+# Retrieving root user's key and certificate
+terraform -chdir=local-cluster output -raw root_user_key > root.key
+terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-### 4. Install essential tools in the cluster using Terraform
+## Setting cluster entry in kubeconfig
 
-Execute the following commands to install indispensable Helm charts into your cluster, including `argo-cd`, `ingress-nginx`, `kube-prometheus-stack`, and `trivy-operator`.
+When you create a KinD cluster, a kubeconfig file is automatically configured to access the cluster, but we won't use it. Instead, we will set up the kubeconfig from scratch.
 
-```shell
-terraform -chdir=cluster-toolkit init
-terraform -chdir=cluster-toolkit apply -var-file=../cluster-toolkit.tfvars -var-file=../port-mappings.tfvars -parallelism=1
+```bash
+# Setting cluster entry in kubeconfig
+kubectl config set-cluster k8slab --server=$(cat cluster-endpoint.txt) --certificate-authority=cluster-ca.crt --embed-certs=true
 ```
 
-### 5. Retrieve login information for dashboard access
+## Setting root user in kubeconfig
 
-The following command provides URLs, usernames, and passwords required to access dashboards and tools installed on your cluster.
+```bash
+# Setting user entry in kubeconfig
+kubectl config set-credentials k8slab-root --client-key=root.key --client-certificate=root.crt --embed-certs=true
 
-```shell
-terraform -chdir=cluster-toolkit output login_info
+# Setting context entry in kubeconfig
+kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
+
+# Switching to root user
+kubectl config use-context k8slab-root
 ```
 
-You can use this information to access insightful dashboards for tools like Argo CD, Prometheus, and Grafana directly from your web browser.
+## Granting user credentials
 
-![Dashboards screenshot](./docs/img/dashboards.png)
+Let's create two dummy users:
 
-### 6. Deploy the Hello World application using Argo CD
+- John Dev, who will be given the 'developer' role.
+- Jane Ops, who will be given the 'administrator' cluster-role.
 
-Apply the Argo CD configuration using the following command, kickstarting the deployment process for the `hello-world` application.
+To gain access to the cluster,
+each user must generate a private key and a Certificate Signing Request (CSR) file,
+which must then be signed by the cluster's Certificate Authority (CA),
+thus generating the user's certificate file.
 
-```shell
-kubectl apply -f ../argocd-apps/hello-world.yaml
+```bash
+# Generating private keys
+openssl genrsa -out johndev.key 2048
+openssl genrsa -out janeops.key 2048
+
+# Generating CSR files
+openssl req -new -key johndev.key -out johndev.csr -subj "/CN=John Dev"
+openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
+
+# Signing certificates
+openssl x509 -req -in johndev.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out johndev.crt -days 1
+openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
+
+# Setting user entries in kubeconfig
+kubectl config set-credentials k8slab-johndev --client-key=johndev.key --client-certificate=johndev.crt --embed-certs=true
+kubectl config set-credentials k8slab-janeops --client-key=janeops.key --client-certificate=janeops.crt --embed-certs=true
+
+# Setting context entries in kubeconfig
+kubectl config set-context k8slab-johndev --cluster=k8slab --user=k8slab-johndev
+kubectl config set-context k8slab-janeops --cluster=k8slab --user=k8slab-janeops
 ```
 
-Open Argo CD in your browser to manage the application deployment.
+## Applying Role-Based Access Control (RBAC) resources
 
-![Argo CD screenshot](./docs/img/argocd-2.png)
+This will create the 'developer' role and the 'administrator' cluster-role,
+as well as bind them to 'John Dev' and 'Jane Ops' users, respectively.
 
-### 8. Open the Hello World application in your browser
+This will also create the 'cluster-tools-installer' and 'argocd-application-deployer' service accounts.
 
-Access the following URL in your browser to open the Hello World application:
-
-[http://hello.localhost](http://hello.localhost)
-
-### 9. Explore the Hello World application configuration
-
-<!-- The Hello World application is organized into multiple directories and files, simulating real-world scenarios where components might reside in separate repositories. -->
-
-<!-- In this repository, the application configuration is distributed across the following directories and files: -->
-
-<!-- - [`apps/hello-world/`](./apps/hello-world/): contains the Python source code of the application along with a `Dockerfile` to build its image. -->
-<!-- - [`.github/workflows/hello-world.yaml`](./.github/workflows/hello-world.yaml): contains the GitHub Actions configuration responsible for testing the application. Upon successfull tests, it builds and pushes the Docker image to a container registry. -->
-<!-- - [`helm-charts/hello-world/`](./helm-charts/hello-world/): contains the application Helm chart and its pre-configured Kubernetes resources, including files like `Deployment.yaml`, `Service.yaml`, `ConfigMap.yaml`, and more. -->
-<!-- - [`argocd-apps/hello-world.yaml`](./argocd-apps/hello-world.yaml): contains the Argo CD configuration necessary for managing the deployment of the application. -->
-
-<!-- ```txt
-apps
-└── hello-world
-    ├── Dockerfile
-    ├── index.html
-    └── nginx.conf
-
-.github
-└── workflows
-    └── hello-world.yaml
-
-helm-charts
-└── hello-world
-    ├── Chart.yaml
-    ├── templates
-    │   ├── ConfigMap.yaml
-    │   ├── Deployment.yaml
-    │   ├── Ingress.yaml
-    │   ├── ServiceMonitor.yaml
-    │   └── Service.yaml
-    └── values.yaml
-
-argocd-apps
-└── hello-world.yaml
-``` -->
-
-Below are some code snippets extracted from the Hello World application configuration.
-
-#### Ingress NGINX Controller governs how external traffic is directed to Kubernetes services
-
-You may have noticed that the URL `http://hello.localhost` doesn't include a port number like `:8080`. Here's a simplified snippet demonstrating how the `hello-world-ingress` is configured to ensure that incoming traffic directed to `hello.localhost` is routed to the port `8080` of the `hello-world-service`:
-
-```yaml
-# helm-charts/hello-world/templates/Ingress.yaml
-
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: hello-world-ingress
-  # (...)
-spec:
-  rules:
-  - host: hello.localhost
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: hello-world-service
-            port:
-              number: 8080
+```bash
+# Applying RBAC resources
+kubectl apply -f rbac/ \
+--prune -l selection=rbac \
+--prune-allowlist=rbac.authorization.k8s.io/v1/ClusterRole \
+--prune-allowlist=rbac.authorization.k8s.io/v1/ClusterRoleBinding \
+--prune-allowlist=rbac.authorization.k8s.io/v1/Role \
+--prune-allowlist=rbac.authorization.k8s.io/v1/RoleBinding
 ```
 
-#### Argo CD listens for changes in the application Helm chart
+## Retrieving service account tokens
 
-As configurations in the `helm-charts/hello-world` directory of this repository are updated and pushed to GitHub, Argo CD automatically detects these changes and synchronizes them to ensure that the deployed state within the cluster aligns with the desired state. See where it is configured:
+In a real environment, these tokens would typically be incorporated into the CI/CD secrets.
+However, for the purposes of this simulation, let's store them in files instead.
 
-```yaml
-# argocd-apps/hello-world.yaml
+```bash
+# Retrieving cluster-tools-installer service account token
+kubectl get secret cluster-tools-installer -o jsonpath='{.data.token}' | base64 --decode > cluster-tools-installer.token
 
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: hello-world-application-set
-  namespace: argocd
-spec:
-  template:
-    spec:
-      source:
-        repoURL: https://github.com/adarlan/k8slab.git
-        path: helm-charts/hello-world
-# (...)
+# Retrieving argocd-application-deployer service account token
+kubectl get secret argocd-application-deployer -n argocd -o jsonpath='{.data.token}' | base64 --decode > argocd-application-deployer.token
 ```
 
-#### Helm templates enable parameterized application deployments
+## Installing cluster tools
 
-The reason for packaging the application manifests into a Helm chart is to utilize Helm template directives, allowing the injection of distinct values during application deployment across multiple environments. See this example:
+Cluster-tools is a collection of Helm charts that extend the functionality of the Kubernetes cluster,
+improving deployments, security, networking, monitoring, etc.,
+by adding tools such as Argo CD, Prometheus, Grafana, Trivy Operator, NGINX Ingress Controller, and more.
 
-```yaml
-# helm-charts/hello-world/templates/ConfigMap.yaml
+These tools can be installed in 3 ways:
 
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Release.Name }}-configmap
-data:
-  greetingMessage: {{ .Values.greetingMessage }}
+- Using Helm
+- Using Terraform
+- Using Argo CD (in this case, the argocd-stack must be installed first with Helm or Terraform)
+
+We'll use Terraform to install Argo CD and then use Argo CD to install the other tools.
+
+### Installing Argo CD with Terraform (~5 minutes)
+
+We'll use the Terraform `-target` option to limit the operation to only the `helm_release.argocd_stack` resource and its dependencies.
+As argocd-stack depends on networking-stack, the networking-stack will also be installed.
+
+As the `-target` option is for exceptional use only,
+Terraform will warn "Resource targeting is in effect" and "Applied changes may be incomplete",
+but for the purposes of this simulation you can ignore these messages.
+
+```bash
+terraform -chdir=cluster-tools init
+
+TF_LOG=INFO \
+terraform -chdir=cluster-tools apply \
+-var cluster_ca_certificate=../cluster-ca.crt \
+-var service_account_token=../cluster-tools-installer.token \
+-var cluster_endpoint=$(cat cluster-endpoint.txt) \
+-auto-approve -parallelism=1 \
+-target=helm_release.argocd_stack
 ```
 
-#### Argo CD deploys the application in multiple environments with distinct parameters
+### Installing cluster-tools with Argo CD
 
-Below is an example of the Argo CD configuration for deploying the application in multiple environments, injecting different values for each environment.
+<!-- Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name to avoid accidental conflicts with other finalizer writers -->
 
-```yaml
-# argocd-apps/hello-world.yaml
-
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: hello-world-application-set
-  namespace: argocd
-spec:
-  generators:
-  - list:
-      elements:
-
-        # STAGING
-      - releaseName: hello-world-staging
-        greetingMessage: Hello, Staging Environment!
-        destinationCluster: staging
-        # (...)
-
-        # PRODUCTION
-      - releaseName: hello-world-production
-        greetingMessage: Hello, Production Environment!
-        destinationCluster: production
-        # (...)
-
-  template:
-    spec:
-      source:
-        repoURL: https://github.com/adarlan/k8slab.git
-        path: helm-charts/hello-world
-        helm:
-          releaseName: "{{releaseName}}"
-          parameters:
-          - { name: greetingMessage, value: "{{greetingMessage}}" }
-        # (...)
-
-      destination:
-        name: "{{destinationCluster}}"
-# (...)
+```bash
+kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
+apply -n argocd -f argocd/toolkit-applications/ \
+--prune -l selection=toolkit-applications \
+--prune-allowlist=argoproj.io/v1alpha1/Application \
+--prune-allowlist=argoproj.io/v1alpha1/ApplicationSet
 ```
 
-### 7. Destroy your cluster
+### Argo CD login
 
-Once you've finished exploring and experimenting with your local Kubernetes environment,
-it's important to clean up resources.
+```bash
+kubectl config use-context k8slab-janeops
+argocdPassword=$(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
 
-```shell
-terraform -chdir=cluster-toolkit destroy -var-file=../cluster-toolkit.tfvars -var-file=../port-mappings.tfvars
-terraform -chdir=kind-cluster destroy -var-file=../kind-cluster.tfvars -var-file=../port-mappings.tfvars
+# argocd login (using the --grpc-web flag because ingressGrpc is not yet configured)
+argocd login --grpc-web --insecure argocd.localhost --username admin --password $argocdPassword
 ```
 
-## Contributing
+### Waiting cluster-tools synchronization (~20 minutes)
 
-Contributions are welcome! Feel free to submit issues or pull requests for enhancements, bug fixes, or new features.
+The monitoring-stack usually takes a long time to synchronize,
+and its health state usually transitions to 'Degraded' at some point during the synchronization,
+causing the `argocd app wait` command to fail, despite the synchronization process continuing.
+Because of this we will retry two more times.
 
-## License
+```bash
+retries=0
+until argocd app wait -l selection=toolkit-applications; do
+  ((++retries)); if [ $retries -ge 3 ]; then break; fi
+done
+```
 
-This project is licensed under the [Apache 2.0 License](./LICENSE).
+<!-- FUNCTION manual -->
+
+## Argo CD UI
+
+```bash
+kubectl config use-context k8slab-janeops
+
+# get initial admin password
+echo $(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
+```
+
+[http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
+
+Username: `admin`
+
+## Grafana
+
+```bash
+kubectl config use-context k8slab-janeops
+
+echo $(kubectl get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+
+# using port-forward while we don't have ingress configuration
+kubectl port-forward -n monitoring service/monitoring-stack-grafana 8080:80
+```
+
+Open Grafana: http://localhost:8080
+
+Add data source >> Loki
+
+- Connection URL: http://loki-gateway:80
+- HTTP headers: X-Scope-OrgID=foobar
+- Save & test
+
+Add data source >> Prometheus
+
+- ???
+
+<!-- FUNCTION down -->
+## Down
+
+### Uninstalling cluster tools
+
+```bash
+# Uninstalling cluster tools that were installed with argocd
+kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
+delete \
+-n argocd \
+-f argocd/toolkit-applications/ \
+-l selection=toolkit-applications
+
+# Uninstalling argocd stack and its dependencies
+terraform -chdir=cluster-tools \
+destroy \
+-var cluster_ca_certificate=../cluster-ca.crt \
+-var service_account_token=../cluster-tools-installer.token \
+-var cluster_endpoint=$(cat cluster-endpoint.txt) \
+-auto-approve
+```
+
+### Revoking user credentials
+
+```bash
+# TODO How to revoke user certificates?
+```
+
+### Deleting RBAC resources
+
+```bash
+kubectl config use-context k8slab-root
+kubectl delete -f rbac -l selection=rbac
+```
+
+### Destroying local cluster
+
+```bash
+terraform -chdir=local-cluster destroy -auto-approve
+```
+
+<!-- FUNCTION clean -->
+## Clean
+
+```bash
+docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_name; do
+    docker stop "$container_name" >/dev/null 2>&1
+    docker rm "$container_name" >/dev/null 2>&1
+done
+
+(cd local-cluster; git clean -Xfd)
+(cd cluster-tools; git clean -Xfd)
+
+git clean -Xf
+```
