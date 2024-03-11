@@ -4,13 +4,20 @@ kind: Application
 metadata:
   name: security-stack
   namespace: argocd
+  labels:
+    selection: toolkit-applications
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+    # Without the resources-finalizer.argocd.argoproj.io finalizer,
+    # deleting an application will not delete the resources it manages.
+    # To perform a cascading delete, you must add the finalizer.
 
 spec:
   project: default
 
   source:
     repoURL: https://github.com/adarlan/k8slab.git
-    path: helm-charts/security-stack
+    path: cluster-tools/security-stack
     targetRevision: master
     helm:
       releaseName: security
@@ -23,8 +30,8 @@ spec:
     namespace: security
 
   syncPolicy:
-    # automated:
-    #   prune: true
-    #   selfHeal: true
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
