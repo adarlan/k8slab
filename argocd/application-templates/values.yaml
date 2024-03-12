@@ -12,7 +12,7 @@ pythonCrud:
         basePath: ""
 
       serviceMonitor:
-        enabled: false
+        enabled: true
 
         prometheusOperatorReleaseName: monitoring-stack
         # TODO => prometheusRelease: monitoring-stack
