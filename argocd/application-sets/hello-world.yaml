@@ -4,8 +4,10 @@ kind: ApplicationSet
 metadata:
   name: hello-world
   namespace: argocd
-  # finalizers:
-  # - resources-finalizer.argocd.argoproj.io
+  labels:
+    selection: application-sets
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
 
 spec:
   generators:
@@ -45,22 +47,27 @@ spec:
       namespace: argocd
       labels:
         app: "{{appName}}"
+        selection: application-sets
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
 
       source:
         repoURL: https://github.com/adarlan/k8slab.git
-        path: helm-charts/hello-world
+        path: deployable-apps/hello-world
         targetRevision: "{{targetRevision}}"
         helm:
           releaseName: "{{appName}}"
-          # valueFiles:
-          # - values-{{profile}}.yaml
-          parameters:
-          - { name: environment,     value: "{{environment}}" }
-          - { name: greetingMessage, value: "{{greetingMessage}}" }
-          - { name: route,           value: "{{route}}" }
-          - { name: replicas,        value: "{{replicas}}" }
+          valuesObject:
+            environment: "{{environment}}"
+            greetingMessage: "{{greetingMessage}}"
+            route: "{{route}}"
+            replicas: "{{replicas}}"
+            ingress:
+              enabled: true
+            serviceMonitor:
+              enabled: true
 
       destination:
         name: "{{destinationCluster}}"

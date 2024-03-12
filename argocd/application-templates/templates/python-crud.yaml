@@ -7,6 +7,10 @@ kind: Application
 metadata:
   name: {{ .name }}
   namespace: argocd
+  labels:
+    selection: application-templates
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
 
 spec:
   project: default
@@ -14,7 +18,7 @@ spec:
   source:
     repoURL: https://github.com/adarlan/k8slab.git
     targetRevision: {{ .chartVersion }}
-    path: helm-charts/python-crud
+    path: deployable-apps/python-crud
 
     helm:
       releaseName: {{ .name }}

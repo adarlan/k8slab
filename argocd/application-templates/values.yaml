@@ -22,19 +22,19 @@ pythonCrud:
         - microserviceName: item-creator
           microserviceReplicas: 1
           clientMaxIterations: 10
-          clientIntervalInMinutes: 5
+          clientIntervalInMinutes: 1
 
         - microserviceName: item-reader
           microserviceReplicas: 1
           clientMaxIterations: 10
-          clientIntervalInMinutes: 5
+          clientIntervalInMinutes: 2
 
         - microserviceName: item-updater
           microserviceReplicas: 1
           clientMaxIterations: 10
-          clientIntervalInMinutes: 5
+          clientIntervalInMinutes: 3
 
         - microserviceName: item-deleter
           microserviceReplicas: 1
           clientMaxIterations: 10
-          clientIntervalInMinutes: 5
+          clientIntervalInMinutes: 4
