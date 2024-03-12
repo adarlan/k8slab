@@ -228,10 +228,10 @@ done
 
 ## Argo CD UI
 
+Get initial admin password:
+
 ```bash
 kubectl config use-context k8slab-janeops
-
-# get initial admin password
 echo $(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
 ```
 
@@ -243,24 +243,10 @@ Username: `admin`
 
 ```bash
 kubectl config use-context k8slab-janeops
-
 echo $(kubectl get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
-
-# using port-forward while we don't have ingress configuration
-kubectl port-forward -n monitoring service/monitoring-stack-grafana 8080:80
 ```
 
-Open Grafana: http://localhost:8080
-
-Add data source >> Loki
-
-- Connection URL: http://loki-gateway:80
-- HTTP headers: X-Scope-OrgID=foobar
-- Save & test
-
-Add data source >> Prometheus
-
-- ???
+http://grafana.localhost
 
 <!-- FUNCTION down -->
 ## Down
