@@ -1,5 +1,6 @@
 kube-prometheus-stack:
   enabled: true
+
   grafana:
     ingress:
       enabled: true
@@ -11,18 +12,9 @@ kube-prometheus-stack:
       hosts:
         - grafana.localhost
       path: /
-    
-    ## Configure additional grafana datasources (passed through tpl)
-    ## ref: http://docs.grafana.org/administration/provisioning/#datasources
     additionalDataSources:
     - name: loki
-      # access: proxy
-      # basicAuth: true
-      # basicAuthPassword: pass
-      # basicAuthUser: daco
       editable: false
-      # jsonData:
-      #     tlsSkipVerify: true
       orgId: 1
       type: loki
       url: http://loki-gateway:80
@@ -48,10 +40,6 @@ kube-prometheus-stack:
       paths:
         - /(.*)
 
-grafana:
-  enabled: false
-  datasources: {}
-
 loki:
   enabled: true
   loki:
@@ -68,35 +56,3 @@ promtail:
     clients:
       - url: http://loki-gateway/loki/api/v1/push
         tenant_id: 1
-
-# kube-prometheus-stack:
-#   # prometheus:
-#   #   service:
-#   #     type: NodePort
-#   #     nodePort: ${prometheusNodePort}
-#   grafana:
-#     enabled: false
-#     # service:
-#     #   type: NodePort
-#     #   nodePort: ${grafanaNodePort}
-
-# grafana:
-#   datasources: {}
-#   #  datasources.yaml:
-#   #    apiVersion: 1
-#   #    datasources:
-#   #    - name: Prometheus
-#   #      type: prometheus
-#   #      url: http://prometheus-prometheus-server
-#   #      access: proxy
-#   #      isDefault: true
-#   #    - name: CloudWatch
-#   #      type: cloudwatch
-#   #      access: proxy
-#   #      uid: cloudwatch
-#   #      editable: false
-#   #      jsonData:
-#   #        authType: default
-#   #        defaultRegion: us-east-1
-#   #    deleteDatasources: []
-#   #    - name: Prometheus

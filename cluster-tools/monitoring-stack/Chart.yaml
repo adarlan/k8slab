@@ -9,11 +9,6 @@ dependencies:
     version: 56.6.2
     condition: kube-prometheus-stack.enabled
 
-  - name: grafana
-    repository: https://grafana.github.io/helm-charts
-    version: 7.3.3
-    condition: grafana.enabled
-
   - name: loki
     repository: https://grafana.github.io/helm-charts
     version: 5.43.3
