@@ -96,10 +96,7 @@ Let's create two dummy users:
 - John Dev, who will be given the 'developer' role.
 - Jane Ops, who will be given the 'administrator' cluster-role.
 
-To gain access to the cluster,
-each user must generate a private key and a Certificate Signing Request (CSR) file,
-which must then be signed by the cluster's Certificate Authority (CA),
-thus generating the user's certificate file.
+### Generating private keys and Certificate Signing Request (CSR) files
 
 ```bash
 # Generating private keys
@@ -109,11 +106,19 @@ openssl genrsa -out janeops.key 2048
 # Generating CSR files
 openssl req -new -key johndev.key -out johndev.csr -subj "/CN=John Dev"
 openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
+```
 
+### Signing certificates
+
+```bash
 # Signing certificates
 openssl x509 -req -in johndev.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out johndev.crt -days 1
 openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
+```
 
+### Setting user credentials in kubeconfig
+
+```bash
 # Setting user entries in kubeconfig
 kubectl config set-credentials k8slab-johndev --client-key=johndev.key --client-certificate=johndev.crt --embed-certs=true
 kubectl config set-credentials k8slab-janeops --client-key=janeops.key --client-certificate=janeops.crt --embed-certs=true
@@ -189,8 +194,6 @@ terraform -chdir=cluster-tools apply \
 ```
 
 ### Installing cluster-tools with Argo CD
-
-<!-- Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name to avoid accidental conflicts with other finalizer writers -->
 
 ```bash
 kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
