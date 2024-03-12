@@ -32,6 +32,8 @@ Since both host and containers share the same kernel, configuring it on the host
 
 This value is reset when the system restarts.
 
+TODO Move it to a pod initializer?
+
 ```bash
 if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
   sudo sysctl -w fs.inotify.max_user_instances=1024
@@ -199,18 +201,18 @@ terraform -chdir=cluster-tools apply \
 kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
 apply -n argocd -f argocd/toolkit-applications/ \
 --prune -l selection=toolkit-applications \
---prune-allowlist=argoproj.io/v1alpha1/Application \
---prune-allowlist=argoproj.io/v1alpha1/ApplicationSet
+--prune-allowlist=argoproj.io/v1alpha1/Application
 ```
 
-### Argo CD login
+### Argocd CLI login
+
+TODO Using the --grpc-web flag because ingressGrpc is not yet configured
 
 ```bash
-kubectl config use-context k8slab-janeops
-argocdPassword=$(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
-
-# argocd login (using the --grpc-web flag because ingressGrpc is not yet configured)
-argocd login --grpc-web --insecure argocd.localhost --username admin --password $argocdPassword
+argocd login --grpc-web --insecure \
+argocd.localhost \
+--username admin \
+--password $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
 ```
 
 ### Waiting cluster-tools synchronization (~20 minutes)
@@ -227,38 +229,136 @@ until argocd app wait -l selection=toolkit-applications; do
 done
 ```
 
+## Deploying applications
+
+### Deploying application-sets (Hello World - helm chart)
+
+```bash
+kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
+apply -n argocd -f argocd/application-sets/ \
+--prune -l selection=application-sets \
+--prune-allowlist=argoproj.io/v1alpha1/ApplicationSet
+```
+
+### Deploying application-templates (Python CRUD - helm chart TODO -> kustomize?)
+
+```bash
+creds="--kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token)"
+helm $creds list --short -n argocd | grep -q '^argocd-apps$' \
+&& helm $creds upgrade argocd-apps -n argocd argocd/application-templates \
+|| helm $creds install argocd-apps -n argocd argocd/application-templates
+```
+
+### Waiting for app sync
+
+```bash
+argocd app wait -l selection=application-sets
+argocd app wait -l selection=application-templates
+```
+
 <!-- FUNCTION manual -->
+## Accessing cluster tools in your web browser
 
-## Argo CD UI
+### Argo CD
 
-Get initial admin password:
-
-```bash
-kubectl config use-context k8slab-janeops
-echo $(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
-```
-
-[http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
-
-Username: `admin`
-
-## Grafana
+- [http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
 
 ```bash
-kubectl config use-context k8slab-janeops
-echo $(kubectl get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+# Retrieving 'admin' password
+echo $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
 ```
 
-http://grafana.localhost
+### Grafana
 
-<!-- FUNCTION down -->
-## Down
+- [http://grafana.localhost](http://grafana.localhost)
+
+```bash
+# Retrieving 'admin' password
+echo $(kubectl --context k8slab-janeops get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+```
+
+### Prometheus
+
+- [http://prometheus.localhost](http://prometheus.localhost)
+
+## Accessing applications in your web browser
+
+### Hello World application
+
+- http://hello.localhost
+- http://stg.localhost/hello/
+- http://dev.localhost/hello
+
+### Python CRUD application
+
+Get all items:
+
+- http://crud.localhost/item-reader/api/items/.*
+
+You can interact with Python CRUD's API using `curl` commands:
+
+```bash
+# Create item with name=FooBar
+curl -X POST \
+-H "Content-Type: application/json" \
+-d '{"name":"FooBar"}' \
+http://crud.localhost/item-creator/api/items
+
+# Read items with name=FooBar
+curl -X GET \
+http://crud.localhost/item-reader/api/items/%5EFooBar%24
+
+# Update items with name=FooBar to name=BarFoo
+curl -X PUT \
+-H "Content-Type: application/json" \
+-d '{"name":"BarFoo"}' \
+http://crud.localhost/item-updater/api/items/%5EFooBar%24
+
+# Delete items with name=BarFoo
+curl -X DELETE \
+http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
+```
+
+Health check:
+
+- http://crud.localhost/item-creator/healthz
+- http://crud.localhost/item-reader/healthz
+- http://crud.localhost/item-updater/healthz
+- http://crud.localhost/item-deleter/healthz
+
+Prometheus service monitor target statuses:
+
+- Prometheus >> Status >> Targets >> Filter by endpoint or labels: `python-crud`
+- http://prometheus.localhost/targets?search=python-crud
+
+Logs for the last 30 minutes in the 'python-crud' namespace:
+
+- Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `python-crud` >> Select range: `Last 30 minutes` >> Run query
+- http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22python-crud%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
+
+<!-- FUNCTION drop -->
+## Drop
+
+### Undeploying applications
+
+```bash
+# python-crud
+helm --kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token) \
+uninstall argocd-apps -n argocd
+
+# hello-world
+kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
+delete \
+-n argocd \
+-f argocd/application-sets/ \
+-l selection=application-sets
+```
 
 ### Uninstalling cluster tools
 
 ```bash
 # Uninstalling cluster tools that were installed with argocd
-kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
+kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
 delete \
 -n argocd \
 -f argocd/toolkit-applications/ \
@@ -275,15 +375,12 @@ destroy \
 
 ### Revoking user credentials
 
-```bash
-# TODO How to revoke user certificates?
-```
+TODO How to revoke user certificates?
 
 ### Deleting RBAC resources
 
 ```bash
-kubectl config use-context k8slab-root
-kubectl delete -f rbac -l selection=rbac
+kubectl --context k8slab-root delete -f rbac/ -l selection=rbac
 ```
 
 ### Destroying local cluster
@@ -292,17 +389,18 @@ kubectl delete -f rbac -l selection=rbac
 terraform -chdir=local-cluster destroy -auto-approve
 ```
 
-<!-- FUNCTION clean -->
-## Clean
+<!-- FUNCTION nuke -->
+## Nuke
 
 ```bash
+# Stopping and removing Docker containers used as cluster nodes
 docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_name; do
     docker stop "$container_name" >/dev/null 2>&1
     docker rm "$container_name" >/dev/null 2>&1
 done
 
+# Removing gitignored files
 (cd local-cluster; git clean -Xfd)
 (cd cluster-tools; git clean -Xfd)
-
 git clean -Xf
 ```
