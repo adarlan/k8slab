@@ -11,6 +11,23 @@ kube-prometheus-stack:
       hosts:
         - grafana.localhost
       path: /
+    
+    ## Configure additional grafana datasources (passed through tpl)
+    ## ref: http://docs.grafana.org/administration/provisioning/#datasources
+    additionalDataSources:
+    - name: loki
+      # access: proxy
+      # basicAuth: true
+      # basicAuthPassword: pass
+      # basicAuthUser: daco
+      editable: false
+      # jsonData:
+      #     tlsSkipVerify: true
+      orgId: foobar
+      type: loki
+      url: http://loki-gateway:80
+      version: 1
+
   prometheus:
     ingress:
       enabled: true
