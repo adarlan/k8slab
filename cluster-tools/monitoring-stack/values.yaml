@@ -27,6 +27,10 @@ kube-prometheus-stack:
       type: loki
       url: http://loki-gateway:80
       version: 1
+      jsonData:
+        httpHeaderName1: 'X-Scope-OrgID'
+      secureJsonData:
+        httpHeaderValue1: '1'
 
   prometheus:
     ingress:
