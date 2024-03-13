@@ -29,4 +29,4 @@ ingress:
 
 serviceMonitor:
   enabled: false
-  prometheusOperatorReleaseName: prometheus
+  prometheusRelease: prometheus

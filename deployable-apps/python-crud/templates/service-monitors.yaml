@@ -1,6 +1,6 @@
 {{ if .Values.serviceMonitor.enabled }}
 {{ $releaseName := .Release.Name }}
-{{ $prometheusOperatorReleaseName := .Values.serviceMonitor.prometheusOperatorReleaseName }}
+{{ $prometheusRelease := .Values.serviceMonitor.prometheusRelease }}
 {{ range .Values.microservices }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -11,7 +11,7 @@ metadata:
     app: {{ printf "%s-%s" $releaseName .microserviceName }}
 
     # NOTE Prometheus Operator automatically generates monitoring target configuration based on this label
-    release: {{ $prometheusOperatorReleaseName }}
+    release: {{ $prometheusRelease }}
 
 spec:
   selector:

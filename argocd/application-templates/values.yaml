@@ -13,9 +13,7 @@ pythonCrud:
 
       serviceMonitor:
         enabled: true
-
-        prometheusOperatorReleaseName: monitoring-stack
-        # TODO => prometheusRelease: monitoring-stack
+        prometheusRelease: monitoring-stack
 
       microservices:
 
