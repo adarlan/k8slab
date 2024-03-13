@@ -19,6 +19,7 @@ for i in range(0, batch_size):
             url=url,
             response_status=response.status_code,
             response_data=response.json())
+        # TODO do not log the entire response
 
     except requests.exceptions.RequestException as e:
         logger.error('Request to fetch items failed',
