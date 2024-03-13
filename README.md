@@ -549,6 +549,14 @@ PromQL (Prometheus Query Language) examples:
 
 ## TODO
 
+### Tracing
+
+OpenTelemetry
+- https://opentelemetry.io/
+
+Jaeger
+- https://www.jaegertracing.io/
+
 ### Grafana showing "too many outstanding requests" error while querying Loki datasource
 
 - https://stackoverflow.com/questions/74568197/grafana-showing-too-many-outstanding-requests-error-while-querying-loki-dashbo
