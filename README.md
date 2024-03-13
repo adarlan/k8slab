@@ -170,7 +170,7 @@ TODO Move it to a pod initializer
 
 ```bash
 if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
-  sudo sysctl -w fs.inotify.max_user_instances=1024
+  docker run -it --rm --privileged alpine sysctl -w fs.inotify.max_user_instances=1024
 fi
 ```
 
