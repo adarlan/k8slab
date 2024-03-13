@@ -5,3 +5,4 @@ script.sh
 *.crt
 *.token
 *-endpoint.txt
+*.password
