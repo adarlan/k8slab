@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-grafana-dashboard" .Release.Name }}
+  labels:
+    grafana_dashboard: "1"
+data:
+  kubernetes.json: |
+{{ .Files.Get "grafana-dashboard.json" | indent 4 }}
+
+# TODO kubernetes.json? Is this arbitrary?
