@@ -15,44 +15,26 @@ A collection of components designed to simplify the provisioning and management 
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
 - [Docker Engine](https://docs.docker.com/engine/) for containerization of applications.
 
-## Configuring Terraform
+## Local cluster
 
-```bash
-tfenv install 1.7.3
-tfenv use 1.7.3
-```
-
-## Setting the maximum number of file system notification subscribers
-
-Applications can use the `fs.inotify` Linux kernel subsystem to register for notifications when specific files or directories are modified, accessed, or deleted.
-
-Let's increase the value of the `fs.inotify.max_user_instances` parameter to prevent some containers in the monitoring stack from crashing due to "too many open files" while watching for changes in the log files.
-
-Since both host and containers share the same kernel, configuring it on the host also applies to the Docker containers that KinD uses as cluster nodes, and also to the pod's containers running inside those nodes.
-
-This value is reset when the system restarts.
-
-TODO Move it to a pod initializer?
-
-```bash
-if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
-  sudo sysctl -w fs.inotify.max_user_instances=1024
-fi
-```
-
-## Provisioning local cluster (~2 minutes)
+### Provisioning local cluster with Terraform (~2 minutes)
 
 Provisioning a KinD (Kubernetes-in-Docker) cluster in the local environment using Terraform.
 You could use the `kind` CLI to create the cluster, but to make it more like a real environment, we will use Terraform.
 
 ```bash
+tfenv install 1.7.3
+tfenv use 1.7.3
+
 terraform -chdir=local-cluster init
 
 TF_LOG="INFO" \
 terraform -chdir=local-cluster apply -auto-approve
 ```
 
-## Retrieving cluster credentials
+## Role-Based Access Control (RBAC)
+
+### Retrieving cluster credentials
 
 The directory `/etc/kubernetes/pki/` of a control-plane node typically contains the Public Key Infrastructure (PKI) assets used by the Kubernetes control-plane components for secure communication and authentication within the cluster.
 
@@ -69,7 +51,7 @@ terraform -chdir=local-cluster output -raw root_user_key > root.key
 terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-## Setting cluster entry in kubeconfig
+### Setting cluster entry in kubeconfig
 
 When you create a KinD cluster, a kubeconfig file is automatically configured to access the cluster, but we won't use it. Instead, we will set up the kubeconfig from scratch.
 
@@ -78,7 +60,7 @@ When you create a KinD cluster, a kubeconfig file is automatically configured to
 kubectl config set-cluster k8slab --server=$(cat cluster-endpoint.txt) --certificate-authority=cluster-ca.crt --embed-certs=true
 ```
 
-## Setting root user in kubeconfig
+### Setting root user in kubeconfig
 
 ```bash
 # Setting user entry in kubeconfig
@@ -91,14 +73,14 @@ kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
 kubectl config use-context k8slab-root
 ```
 
-## Granting user credentials
+### Granting user credentials
 
 Let's create two dummy users:
 
 - John Dev, who will be given the 'developer' role.
 - Jane Ops, who will be given the 'administrator' cluster-role.
 
-### Generating private keys and Certificate Signing Request (CSR) files
+#### Generating private keys and Certificate Signing Request (CSR) files
 
 ```bash
 # Generating private keys
@@ -110,7 +92,7 @@ openssl req -new -key johndev.key -out johndev.csr -subj "/CN=John Dev"
 openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
 ```
 
-### Signing certificates
+#### Signing certificates
 
 ```bash
 # Signing certificates
@@ -118,7 +100,7 @@ openssl x509 -req -in johndev.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcr
 openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
 ```
 
-### Setting user credentials in kubeconfig
+#### Setting user credentials in kubeconfig
 
 ```bash
 # Setting user entries in kubeconfig
@@ -130,7 +112,7 @@ kubectl config set-context k8slab-johndev --cluster=k8slab --user=k8slab-johndev
 kubectl config set-context k8slab-janeops --cluster=k8slab --user=k8slab-janeops
 ```
 
-## Applying Role-Based Access Control (RBAC) resources
+### Applying RBAC resources
 
 This will create the 'developer' role and the 'administrator' cluster-role,
 as well as bind them to 'John Dev' and 'Jane Ops' users, respectively.
@@ -147,7 +129,7 @@ kubectl apply -f rbac/ \
 --prune-allowlist=rbac.authorization.k8s.io/v1/RoleBinding
 ```
 
-## Retrieving service account tokens
+### Retrieving service account tokens
 
 In a real environment, these tokens would typically be incorporated into the CI/CD secrets.
 However, for the purposes of this simulation, let's store them in files instead.
@@ -160,19 +142,37 @@ kubectl get secret cluster-tools-installer -o jsonpath='{.data.token}' | base64 
 kubectl get secret argocd-application-deployer -n argocd -o jsonpath='{.data.token}' | base64 --decode > argocd-application-deployer.token
 ```
 
-## Installing cluster tools
+## Cluster tools
 
-Cluster-tools is a collection of Helm charts that extend the functionality of the Kubernetes cluster,
+Cluster tools is a collection of Helm charts that extend the functionality of the Kubernetes cluster,
 improving deployments, security, networking, monitoring, etc.,
-by adding tools such as Argo CD, Prometheus, Grafana, Trivy Operator, NGINX Ingress Controller, and more.
+by adding tools such as Argo CD, Prometheus, Grafana, Loki, Trivy Operator, Ingress NGINX Controller, and more.
 
 These tools can be installed in 3 ways:
 
 - Using Helm
 - Using Terraform
-- Using Argo CD (in this case, the argocd-stack must be installed first with Helm or Terraform)
+- Using Argo CD (in this case, Argo CD must be installed first with Helm or Terraform)
 
 We'll use Terraform to install Argo CD and then use Argo CD to install the other tools.
+
+### Setting the maximum number of file system notification subscribers
+
+The `fs.inotify` Linux kernel subsystem can be used to register for notifications when specific files or directories are modified, accessed, or deleted.
+
+Let's increase the value of the `fs.inotify.max_user_instances` parameter to prevent some containers in the monitoring stack from crashing due to "too many open files" while watching for changes in the log files.
+
+Since both host and containers share the same kernel, configuring it on the host also applies to the Docker containers that KinD uses as cluster nodes, and also to the pod's containers running inside those nodes.
+
+This value is reset when the system restarts.
+
+TODO Move it to a pod initializer
+
+```bash
+if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
+  sudo sysctl -w fs.inotify.max_user_instances=1024
+fi
+```
 
 ### Installing Argo CD with Terraform (~5 minutes)
 
@@ -195,16 +195,7 @@ terraform -chdir=cluster-tools apply \
 -target=helm_release.argocd_stack
 ```
 
-### Installing cluster-tools with Argo CD
-
-```bash
-kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
-apply -n argocd -f argocd/toolkit-applications/ \
---prune -l selection=toolkit-applications \
---prune-allowlist=argoproj.io/v1alpha1/Application
-```
-
-### Argocd CLI login
+### Argo CD CLI login
 
 TODO Using the --grpc-web flag because ingressGrpc is not yet configured
 
@@ -215,7 +206,16 @@ argocd.localhost \
 --password $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
 ```
 
-### Waiting cluster-tools synchronization (~20 minutes)
+### Installing cluster tools with Argo CD
+
+```bash
+kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
+apply -n argocd -f argocd/toolkit-applications/ \
+--prune -l selection=toolkit-applications \
+--prune-allowlist=argoproj.io/v1alpha1/Application
+```
+
+### Waiting cluster tools synchronization (~20 minutes)
 
 The monitoring-stack usually takes a long time to synchronize,
 and its health state usually transitions to 'Degraded' at some point during the synchronization,
@@ -229,9 +229,71 @@ until argocd app wait -l selection=toolkit-applications; do
 done
 ```
 
-## Deploying applications
+### Accessing Argo CD
 
-### Deploying application-sets (Hello World - helm chart)
+After installing Argo CD with Terraform,
+you can access its user interface in your browser:
+
+- [http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
+
+```bash
+# Retrieving 'admin' password
+echo $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode) > argocd-admin.password
+```
+
+### Accessing Grafana
+
+After installing the cluster tools with Argo CD and synchronizing the monitoring-stack,
+you can access Grafana in your browser:
+
+- [http://grafana.localhost](http://grafana.localhost)
+
+```bash
+# Retrieving 'admin' password
+echo $(kubectl --context k8slab-janeops get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode) > grafana-admin.password
+```
+
+### Accessing Prometheus
+
+After installing the cluster tools with Argo CD and synchronizing the monitoring-stack,
+you can access Prometheus in your browser:
+
+- [http://prometheus.localhost](http://prometheus.localhost)
+
+## Applications
+
+### Hello World
+
+The Hello World application is a simple web application that displays a greeting message.
+The default greeting message is `Hello, World!`,
+but it can be configured to display a different message.
+
+We'll use the Argo-CD application-set resource to generate 3 Hello World applications,
+one for each environment (development, staging, production).
+
+Each application is configured to display a unique message,
+accessible via a distinct URL,
+and deployed with a different number of replicas.
+
+In a real setup each environment could have a dedicated cluster,
+but in this simulation they are isolated by namespace.
+
+Applications:
+- `hello-world-dev` - deployed with `2` replicas in the `development` namespace, displays `Hello, Devs!` at `http://dev.localhost/hello`
+- `hello-world-stg` - deployed with `4` replicas in the `staging` namespace, displays `Hello, QA Folks!` at `http://stg.localhost/hello`
+- `hello-world-prd` - deployed with `8` replicas in the `production` namespace, displays `Hello, Users!` at `http://hello.localhost`
+
+Each application contains the following resources:
+- 1 deployment with configurable number of replicas
+- 1 service
+- 1 ingress with configurable host and path
+- 1 config-map to configure the greeting message
+
+TODO
+- Use Kustomize instead of Helm for the deployable app
+- Remove the service monitor
+
+#### Applying Hello World application-set
 
 ```bash
 kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
@@ -240,7 +302,61 @@ apply -n argocd -f argocd/application-sets/ \
 --prune-allowlist=argoproj.io/v1alpha1/ApplicationSet
 ```
 
-### Deploying application-templates (Python CRUD - helm chart TODO -> kustomize?)
+#### Waiting for Hello World applications synchronization
+
+```bash
+argocd app wait -l selection=application-sets
+```
+
+#### Waiting for Hello World applications health
+
+```bash
+urls="
+http://dev.localhost/hello/healthz
+http://stg.localhost/hello/healthz
+http://hello.localhost/healthz
+"
+max_retries=3
+retry_interval=10
+for url in $urls; do
+  retries=0
+  until [ "$(curl -s -o /dev/null -w '%{http_code}' $url)" = "200" ]; do
+    ((++retries));
+    if [ $retries -ge $max_retries ]; then exit 1
+    else sleep $retry_interval; fi
+  done
+done
+```
+
+#### Interacting with Hello World applications
+
+Open in your browser:
+- http://dev.localhost/hello
+- http://stg.localhost/hello/
+- http://hello.localhost
+
+You can also interact with Hello World applications using `curl`:
+
+```bash
+curl http://dev.localhost/hello
+curl http://stg.localhost/hello/
+curl http://hello.localhost
+```
+
+### Python CRUD
+
+Resources:
+- 4 services (item-creator, item-reader, item-updater, item-deleter)
+- 4 deployments (one for each service)
+- 1 stateful-set, 1 service, 1 secret - for MongoDB
+- 1 ingress for crud.localhost with 4 paths (one path for each service)
+- 4 cron-jobs to run the clients (one client for each service)
+- 4 service monitors (one for each service)
+- 1 config map for Grafana dashboard
+
+TODO Use application-set instead of application-template for the argocd apps?
+
+#### Deploying Python CRUD
 
 ```bash
 creds="--kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token)"
@@ -249,18 +365,40 @@ helm $creds list --short -n argocd | grep -q '^argocd-apps$' \
 || helm $creds install argocd-apps -n argocd argocd/application-templates
 ```
 
-### Waiting for app sync
+#### Waiting for Python CRUD application synchronization
 
 ```bash
-argocd app wait -l selection=application-sets
 argocd app wait -l selection=application-templates
 ```
 
-## Interacting with applications
+#### Waiting for Python CRUD application health
 
-TODO curl hello-world
+```bash
+urls="
+http://crud.localhost/item-creator/healthz
+http://crud.localhost/item-reader/healthz
+http://crud.localhost/item-updater/healthz
+http://crud.localhost/item-deleter/healthz
+"
+max_retries=3
+retry_interval=10
+for url in $urls; do
+  retries=0
+  until [ "$(curl -s -o /dev/null -w '%{http_code}' $url)" = "200" ]; do
+    ((++retries));
+    if [ $retries -ge $max_retries ]; then exit 1
+    else sleep $retry_interval; fi
+  done
+done
+```
 
-You can interact with Python CRUD's API using `curl` commands:
+#### Interacting with Python CRUD's API
+
+Get all items:
+
+- http://crud.localhost/item-reader/api/items/.*
+
+You can interact with Python CRUD's API using `curl`:
 
 ```bash
 # Create item with name=FooBar
@@ -284,61 +422,15 @@ curl -X DELETE \
 http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
 ```
 
-<!-- FUNCTION manual -->
-## Accessing cluster tools in your web browser
+#### Dashboards
 
-### Argo CD
+- http://grafana.localhost/d/pycrud
 
-After installing Argo CD with Terraform,
-you can access its user interface in your browser:
+#### Logs
 
-- [http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
-
-```bash
-# Retrieving 'admin' password
-echo $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
-```
-
-### Grafana
-
-After installing the cluster tools with Argo CD and synchronizing the monitoring-stack,
-you can access Grafana in your browser:
-
-- [http://grafana.localhost](http://grafana.localhost)
-
-```bash
-# Retrieving 'admin' password
-echo $(kubectl --context k8slab-janeops get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
-```
-
-### Prometheus
-
-After installing the cluster tools with Argo CD and synchronizing the monitoring-stack,
-you can access Prometheus in your browser:
-
-- [http://prometheus.localhost](http://prometheus.localhost)
-
-## Accessing applications in your web browser
-
-After deploying and synchronizing the applications,
-you can access them in your browser.
-
-### Hello World application
-
-Production environment:
-- http://hello.localhost
-
-Staging environment:
-- http://stg.localhost/hello/
-
-Development environment:
-- http://dev.localhost/hello
-
-### Python CRUD application
-
-Get all items:
-
-- http://crud.localhost/item-reader/api/items/.*
+Logs for the last 30 minutes in the 'python-crud' namespace:
+- Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `python-crud` >> Select range: `Last 30 minutes` >> Run query
+- http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22python-crud%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
 
 #### Status
 
@@ -351,12 +443,6 @@ Health check:
 Service monitor targets:
 - Prometheus >> Status >> Targets >> Filter by endpoint or labels: `python-crud`
 - http://prometheus.localhost/targets?search=python-crud
-
-#### Logs
-
-Logs for the last 30 minutes in the 'python-crud' namespace:
-- Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `python-crud` >> Select range: `Last 30 minutes` >> Run query
-- http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22python-crud%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
 
 #### Metrics
 
@@ -384,10 +470,7 @@ Other examples:
 - Items failed to create due to server error: `sum(pycrud_http_requests_total{method="POST", status="500"})`
 - Successful requests by method: `sum by (method) (pycrud_http_requests_total{status="200"})`
 
-#### Dashboards
-
-TODO
-
+<!-- ----------------------------------------------------------------------- -->
 <!-- FUNCTION drop -->
 ## Drop
 
@@ -441,6 +524,7 @@ kubectl --context k8slab-root delete -f rbac/ -l selection=rbac
 terraform -chdir=local-cluster destroy -auto-approve
 ```
 
+<!-- ----------------------------------------------------------------------- -->
 <!-- FUNCTION nuke -->
 ## Nuke
 
@@ -457,6 +541,7 @@ done
 git clean -Xf
 ```
 
+<!-- ----------------------------------------------------------------------- -->
 ## Ref
 
 PromQL (Prometheus Query Language) examples:
