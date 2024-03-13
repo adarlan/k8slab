@@ -21,7 +21,7 @@ spec:
         destinationCluster: in-cluster
         destinationNamespace: production
         route: hello.localhost
-        replicas: "9"
+        replicas: "8"
 
       - environment: staging
         greetingMessage: Hello, QA Folks!
@@ -30,7 +30,7 @@ spec:
         destinationCluster: in-cluster
         destinationNamespace: staging
         route: stg.localhost/hello/
-        replicas: "6"
+        replicas: "4"
 
       - environment: development
         greetingMessage: Hello, Devs!
@@ -39,7 +39,7 @@ spec:
         destinationCluster: in-cluster
         destinationNamespace: development
         route: dev.localhost/hello
-        replicas: "3"
+        replicas: "2"
 
   template:
     metadata:
