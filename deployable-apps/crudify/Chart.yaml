@@ -1,3 +1,3 @@
 apiVersion: v2
-name: python-crud
+name: crudify
 version: 0.1.0

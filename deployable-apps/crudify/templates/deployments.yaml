@@ -26,7 +26,7 @@ spec:
       containers:
       - name: {{ .microserviceName }}
 
-        image: {{ printf "docker.io/adarlan/python-crud-%s:master" .microserviceName }}
+        image: {{ printf "docker.io/adarlan/crudify-%s:master" .microserviceName }}
         # TODO tag for development environment
 
         ports:

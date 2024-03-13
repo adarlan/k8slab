@@ -343,7 +343,7 @@ curl http://stg.localhost/hello/
 curl http://hello.localhost
 ```
 
-### Python CRUD
+### CRUDify
 
 Resources:
 - 4 services (item-creator, item-reader, item-updater, item-deleter)
@@ -356,7 +356,7 @@ Resources:
 
 TODO Use application-set instead of application-template for the argocd apps?
 
-#### Deploying Python CRUD
+#### Deploying CRUDify
 
 ```bash
 creds="--kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token)"
@@ -365,13 +365,13 @@ helm $creds list --short -n argocd | grep -q '^argocd-apps$' \
 || helm $creds install argocd-apps -n argocd argocd/application-templates
 ```
 
-#### Waiting for Python CRUD application synchronization
+#### Waiting for CRUDify application synchronization
 
 ```bash
 argocd app wait -l selection=application-templates
 ```
 
-#### Waiting for Python CRUD application health
+#### Waiting for CRUDify application health
 
 ```bash
 urls="
@@ -392,13 +392,13 @@ for url in $urls; do
 done
 ```
 
-#### Interacting with Python CRUD's API
+#### Interacting with CRUDify's API
 
 Get all items:
 
 - http://crud.localhost/item-reader/api/items/.*
 
-You can interact with Python CRUD's API using `curl`:
+You can interact with CRUDify's API using `curl`:
 
 ```bash
 # Create item with name=FooBar
@@ -424,13 +424,13 @@ http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
 
 #### Dashboards
 
-- http://grafana.localhost/d/pycrud
+- http://grafana.localhost/d/crudify
 
 #### Logs
 
-Logs for the last 30 minutes in the 'python-crud' namespace:
-- Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `python-crud` >> Select range: `Last 30 minutes` >> Run query
-- http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22python-crud%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
+Logs for the last 30 minutes in the 'crudify' namespace:
+- Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `crudify` >> Select range: `Last 30 minutes` >> Run query
+- http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22crudify%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
 
 #### Status
 
@@ -441,34 +441,34 @@ Health check:
 - http://crud.localhost/item-deleter/healthz
 
 Service monitor targets:
-- Prometheus >> Status >> Targets >> Filter by endpoint or labels: `python-crud`
-- http://prometheus.localhost/targets?search=python-crud
+- Prometheus >> Status >> Targets >> Filter by endpoint or labels: `crudify`
+- http://prometheus.localhost/targets?search=crudify
 
 #### Metrics
 
 Current number of items (gauge):
-- `sum(pycrud_items_total)`
-- http://prometheus.localhost/graph?g0.expr=sum(pycrud_items_total)
+- `sum(crudify_items_total)`
+- http://prometheus.localhost/graph?g0.expr=sum(crudify_items_total)
 
 Successfully created items (counter):
-- `sum(pycrud_http_requests_total{method="POST", status="200"})`
-- http://prometheus.localhost/graph?g0.expr=sum(pycrud_http_requests_total%7Bmethod%3D%22POST%22%2C%20status%3D%22200%22%7D)
+- `sum(crudify_http_requests_total{method="POST", status="200"})`
+- http://prometheus.localhost/graph?g0.expr=sum(crudify_http_requests_total%7Bmethod%3D%22POST%22%2C%20status%3D%22200%22%7D)
 
 Average duration of successful item read requests (summary):
-- `avg(pycrud_http_request_duration_seconds_sum{method="GET", status="200"})`
-- http://prometheus.localhost/graph?g0.expr=avg(pycrud_http_request_duration_seconds_sum%7Bmethod%3D%22GET%22%2C%20status%3D%22200%22%7D)
+- `avg(crudify_http_request_duration_seconds_sum{method="GET", status="200"})`
+- http://prometheus.localhost/graph?g0.expr=avg(crudify_http_request_duration_seconds_sum%7Bmethod%3D%22GET%22%2C%20status%3D%22200%22%7D)
 
 Average database latency by operation (summary):
-- `avg by (operation) (pycrud_database_latency_seconds_sum)`
-- http://prometheus.localhost/graph?g0.expr=avg%20by%20(operation)%20(pycrud_database_latency_seconds_sum)
+- `avg by (operation) (crudify_database_latency_seconds_sum)`
+- http://prometheus.localhost/graph?g0.expr=avg%20by%20(operation)%20(crudify_database_latency_seconds_sum)
 
 Other examples:
-- All requests: `sum(pycrud_http_requests_total)`
-- Requests by method and status: `sum by (method, status) (pycrud_http_requests_total)`
-- Item creation requests by status: `sum by (status) (pycrud_http_requests_total{method="POST"})`
-- Items failed to create due to client error: `sum(pycrud_http_requests_total{method="POST", status="400"})`
-- Items failed to create due to server error: `sum(pycrud_http_requests_total{method="POST", status="500"})`
-- Successful requests by method: `sum by (method) (pycrud_http_requests_total{status="200"})`
+- All requests: `sum(crudify_http_requests_total)`
+- Requests by method and status: `sum by (method, status) (crudify_http_requests_total)`
+- Item creation requests by status: `sum by (status) (crudify_http_requests_total{method="POST"})`
+- Items failed to create due to client error: `sum(crudify_http_requests_total{method="POST", status="400"})`
+- Items failed to create due to server error: `sum(crudify_http_requests_total{method="POST", status="500"})`
+- Successful requests by method: `sum by (method) (crudify_http_requests_total{status="200"})`
 
 <!-- ----------------------------------------------------------------------- -->
 <!-- FUNCTION drop -->
@@ -477,7 +477,7 @@ Other examples:
 ### Undeploying applications
 
 ```bash
-# python-crud
+# crudify
 helm --kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token) \
 uninstall argocd-apps -n argocd
 
@@ -583,21 +583,21 @@ https://aquasecurity.github.io/trivy-operator/v0.11.0/tutorials/grafana-dashboar
 - serviceMonitor/monitoring/monitoring-stack-kube-prom-kube-proxy/0 (0/3 up)
 - serviceMonitor/monitoring/monitoring-stack-kube-prom-kube-scheduler/0 (0/1 up)
 
-### PyCRUD metrics
+### CRUDify metrics
 
-Gauge pycrud_items_total
-- pycrud_items_total
+Gauge crudify_items_total
+- crudify_items_total
 
-Counter pycrud_http_requests_total (`method` (POST, GET, PUT, DELETE), `status` (200, 400, 500))
-- pycrud_http_requests_created
-- pycrud_http_requests_total
+Counter crudify_http_requests_total (`method` (POST, GET, PUT, DELETE), `status` (200, 400, 500))
+- crudify_http_requests_created
+- crudify_http_requests_total
 
-Summary pycrud_http_request_duration_seconds (`method` (POST, GET, PUT, DELETE), `status` (200, 400, 500))
-- pycrud_http_request_duration_seconds_created
-- pycrud_http_request_duration_seconds_count
-- pycrud_http_request_duration_seconds_sum
+Summary crudify_http_request_duration_seconds (`method` (POST, GET, PUT, DELETE), `status` (200, 400, 500))
+- crudify_http_request_duration_seconds_created
+- crudify_http_request_duration_seconds_count
+- crudify_http_request_duration_seconds_sum
 
-Summary pycrud_database_latency_seconds (`operation` (create_one_item, read_many_items, update_many_items, delete_many_items))
-- pycrud_database_latency_seconds_created
-- pycrud_database_latency_seconds_count
-- pycrud_database_latency_seconds_sum
+Summary crudify_database_latency_seconds (`operation` (create_one_item, read_many_items, update_many_items, delete_many_items))
+- crudify_database_latency_seconds_created
+- crudify_database_latency_seconds_count
+- crudify_database_latency_seconds_sum

@@ -1,5 +1,5 @@
-{{ if .Values.pythonCrud.enabled }}
-{{ range .Values.pythonCrud.applications }}
+{{ if .Values.crudify.enabled }}
+{{ range .Values.crudify.applications }}
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -18,7 +18,7 @@ spec:
   source:
     repoURL: https://github.com/adarlan/k8slab.git
     targetRevision: {{ .chartVersion }}
-    path: deployable-apps/python-crud
+    path: deployable-apps/crudify
 
     helm:
       releaseName: {{ .name }}

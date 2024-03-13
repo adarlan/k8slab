@@ -1,9 +1,9 @@
-pythonCrud:
+crudify:
   enabled: true # if you disable the application, it won't be deleted, because it won't be applied
   applications:
-  - name: python-crud
+  - name: crudify
     chartVersion: master
-    namespace: python-crud
+    namespace: crudify
     values:
 
       ingress:

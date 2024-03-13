@@ -28,7 +28,7 @@ spec:
           containers:
           - name: {{ $clientName }}
 
-            image: {{ printf "docker.io/adarlan/python-crud-%s:master" $clientName }}
+            image: {{ printf "docker.io/adarlan/crudify-%s:master" $clientName }}
             # TODO useDevelopBranchImage
 
             env:

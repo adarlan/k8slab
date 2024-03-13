@@ -142,7 +142,7 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "sum by (method) (pycrud_http_requests_total{status=\"200\"})",
+                    "expr": "sum by (method) (crudify_http_requests_total{status=\"200\"})",
                     "instant": false,
                     "legendFormat": "__auto",
                     "range": true,
@@ -238,7 +238,7 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "sum(pycrud_items_total)",
+                    "expr": "sum(crudify_items_total)",
                     "instant": false,
                     "legendFormat": "Item count",
                     "range": true,
@@ -307,7 +307,7 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "sum(pycrud_items_total)",
+                    "expr": "sum(crudify_items_total)",
                     "instant": false,
                     "legendFormat": "__auto",
                     "range": true,
@@ -384,7 +384,7 @@
                         "uid": "prometheus"
                     },
                     "editorMode": "code",
-                    "expr": "avg by (operation) (rate(pycrud_database_latency_seconds_sum[5m])) * 1000000",
+                    "expr": "avg by (operation) (rate(crudify_database_latency_seconds_sum[5m])) * 1000000",
                     "instant": false,
                     "legendFormat": "__auto",
                     "range": true,
@@ -407,8 +407,8 @@
     },
     "timepicker": {},
     "timezone": "",
-    "title": "Python CRUD",
-    "uid": "pycrud",
+    "title": "CRUDify",
+    "uid": "crudify",
     "version": 1,
     "weekStart": ""
 }
