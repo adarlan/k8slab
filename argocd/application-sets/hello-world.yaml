@@ -66,8 +66,6 @@ spec:
             replicas: "{{replicas}}"
             ingress:
               enabled: true
-            serviceMonitor:
-              enabled: true
 
       destination:
         name: "{{destinationCluster}}"

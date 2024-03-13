@@ -44,6 +44,6 @@ spec:
           service:
             name: {{ .Release.Name }}
             port:
-              number: {{ .Values._servicePortNumber }}
+              name: web
 
 {{ end }}
