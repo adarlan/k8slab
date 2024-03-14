@@ -279,11 +279,13 @@ In a real setup each environment could have a dedicated cluster,
 but in this simulation they are isolated by namespace.
 
 Applications:
+
 - `hello-world-dev` - deployed with `2` replicas in the `development` namespace, displays `Hello, Devs!` at `http://dev.localhost/hello`
 - `hello-world-stg` - deployed with `4` replicas in the `staging` namespace, displays `Hello, QA Folks!` at `http://stg.localhost/hello`
 - `hello-world-prd` - deployed with `8` replicas in the `production` namespace, displays `Hello, Users!` at `http://hello.localhost`
 
 Each application contains the following resources:
+
 - 1 deployment with configurable number of replicas
 - 1 service
 - 1 ingress with configurable host and path
@@ -291,7 +293,6 @@ Each application contains the following resources:
 
 TODO
 - Use Kustomize instead of Helm for the deployable app
-- Remove the service monitor
 
 #### Applying Hello World application-set
 
@@ -345,18 +346,88 @@ curl http://hello.localhost
 
 ### CRUDify
 
-Resources:
-- 4 services (item-creator, item-reader, item-updater, item-deleter)
-- 4 deployments (one for each service)
-- 1 stateful-set, 1 service, 1 secret - for MongoDB
-- 1 ingress for crud.localhost with 4 paths (one path for each service)
-- 4 cron-jobs to run the clients (one client for each service)
-- 4 service monitors (one for each service)
+CRUDify is a CRUD (Create, Read, Update, Delete) application written in Python.
+Unlike a monolithic application, CRUDify is designed to explore with a microservices architecture,
+being composed of distinct components, including multiple services and clients.
+
+CRUDify manages `items`, each consisting of a `name` provided by the client and an `id` assigned by the API.
+
+```json
+// Item schema
+{
+  "id": "string",
+  "name": "string"
+}
+```
+
+Items are uniquely identified by their `id` and validated based on the `name`, which must match the pattern `^[a-zA-Z]{5,30}$`.
+
+CRUDify's API is composed by four services:
+
+- `item-creator`: A service that listens for client requests to create new items in the database.
+- `item-reader`: A service that listens for client requests to fetch items from the database.
+- `item-updater`: A service that listens for client requests to update items in the database.
+- `item-deleter`: A service that listens for client requests to delete items from the database.
+
+The services receive a client request via ingress routing,
+perform the requested operation in the database,
+generate relevant information in the logs,
+update the application metrics,
+and return a response to the client.
+
+The API will be accessible at `http://crud.localhost`.
+An ingress resource is configured to ensure that incoming traffic directed to `http://crud.localhost/<service-name>` is routed to the corresponding service.
+
+Clients interact with CRUDify's API via HTTP requests:
+
+| Method | URL | Data | Description |
+| ------ | --- | ---- | ----------- |
+| `POST`   | `http://crud.localhost/item-creator/api/items`         | `{ name: string }` | Creates a new item |
+| `GET`    | `http://crud.localhost/item-reader/api/items/<query>`  |                    | Retrieves items matching the query |
+| `PUT`    | `http://crud.localhost/item-updater/api/items/<query>` | `{ name: string }` | Updates items matching the query |
+| `DELETE` | `http://crud.localhost/item-deleter/api/items/<query>` |                    | Deletes items matching the query |
+
+The `<query>` parameter is a regex used to filter items by name.
+For example, `GET http://crud.localhost/item-reader/api/items/.*` retrieves all items.
+The query must be URL-encoded to fit the request path.
+
+Four client applications simulate real users:
+
+- `item-creator-client`
+- `item-reader-client`
+- `item-updater-client`
+- `item-deleter-client`
+
+These clients run as batch jobs on a cron schedule.
+In each execution, they perform a random number of iterations.
+For each iteration, they call the CRUDify API with random queries and data.
+Some random-generated data may fail validation, leading to expected bad request errors.
+
+CRUDify uses MongoDB to store the items.
+The configuration includes a stateful-set for the MongoDB container.
+
+CRUDify logs are directed to stdout and transiently stored in files on the cluster nodes.
+These logs are then collected by Promtail agents and forwarded to the Loki server,
+enabling easy visualization of logs through Grafana dashboards.
+
+CRUDify services provide Prometheus metrics for monitoring and performance analysis.
+Each service is equipped with its own service monitor,
+instructing the Prometheus operator on the targets to scrape for metrics.
+The metrics collected from these services can be visualized within Grafana dashboards.
+
+Deploying this application will create the following resources in the cluster:
+
+- 4 services for the API
+- 4 deployments (one for each API service)
+- 1 stateful-set, 1 service, and 1 secret for MongoDB
+- 1 ingress for crud.localhost with 4 paths (one path for each API service)
+- 4 cron-jobs to run the clients (one client for each API service)
+- 4 service monitors (one for each API service)
 - 1 config map for Grafana dashboard
 
 TODO Use application-set instead of application-template for the argocd apps?
 
-#### Deploying CRUDify
+#### Deploying CRUDify application
 
 ```bash
 creds="--kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token)"
@@ -392,13 +463,7 @@ for url in $urls; do
 done
 ```
 
-#### Interacting with CRUDify's API
-
-Get all items:
-
-- http://crud.localhost/item-reader/api/items/.*
-
-You can interact with CRUDify's API using `curl`:
+#### Interacting with CRUDify's API using curl
 
 ```bash
 # Create item with name=FooBar
@@ -421,6 +486,12 @@ http://crud.localhost/item-updater/api/items/%5EFooBar%24
 curl -X DELETE \
 http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
 ```
+
+#### Fetching items in your browser
+
+Fetching all items:
+
+- http://crud.localhost/item-reader/api/items/.*
 
 #### Dashboards
 
@@ -601,3 +672,38 @@ Summary crudify_database_latency_seconds (`operation` (create_one_item, read_man
 - crudify_database_latency_seconds_created
 - crudify_database_latency_seconds_count
 - crudify_database_latency_seconds_sum
+
+### CRUDify queues
+
+Replace the `item-updater` and `item-deleter` services by the following components:
+
+- `item-updater-dispatcher`: A service that listens for client requests to update items and dispatches individual requests to the __item update queue__.
+- `item-updater-worker`: A service that consumes the item update queue via __message queue subscription__ and updates each item in the database.
+- `item-deleter-dispatcher`: A service that listens for client requests to delete items and dispatches individual requests to the __item deletion queue__.
+- `item-deleter-worker`: A cron-job that consumes the item deletion queue via __pooling__ and deletes each item from the database.
+
+### CRUDify database
+
+NFS Volume
+https://github.com/badtuxx/DescomplicandoKubernetes/tree/main/pt/day-6
+
+Prometheus MongoDB Exporter
+https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-mongodb-exporter
+
+MongoDB Community Kubernetes Operator
+https://github.com/mongodb/mongodb-kubernetes-operator
+
+### CRUDify authentication and authorization
+
+### CRUDify client metrics
+
+For cron jobs, exposing metrics via an endpoint isn't feasible due to their short-lived nature.
+Explore alternative monitoring strategies to ensure comprehensive metric collection.
+
+### CRUDify Alerts
+
+PrometheusRule?
+
+### CRUDify Horizontal Pod Autoscaler
+
+HPA
