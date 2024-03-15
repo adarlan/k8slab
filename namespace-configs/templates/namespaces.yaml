@@ -1,0 +1,113 @@
+# <namespaces>
+{{ range .Values.namespaces }}
+{{ $namespaceName := .name }}
+{{ $roles := .roles }}
+{{ $hardResourceQuota := .hardResourceQuota }}
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $namespaceName }}
+
+# <namespace.roles>
+{{ range $roles }}
+{{ $roleName := .name }}
+{{ $permissions := .permissions }}
+{{ $users := .users }}
+{{ $serviceAccounts := .serviceAccounts }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $roleName }}
+  namespace: {{ $namespaceName }}
+
+rules:
+
+# <role.permissions>
+{{ range $permissions }}
+{{ $apiGroup := .apiGroup }}
+{{ $resources := .resources }}
+{{ $accessMode := .accessMode }}
+
+- apiGroups:
+  - "{{ $apiGroup }}"
+
+  resources:
+  {{ range $resources }}
+  - "{{ . }}"
+  {{ end }}
+
+  {{ if eq $accessMode "readwrite" }}
+  verbs: ["*"]
+  {{ else }}
+  verbs: ["get", "list", "watch"]
+  {{ end }}
+
+{{ end }}
+# </role.permissions>
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $roleName }}
+  namespace: {{ $namespaceName }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $roleName }}
+
+subjects:
+
+{{ range $users }}
+- kind: User
+  name: {{ . }}
+{{ end }}
+
+{{ range $serviceAccounts }}
+- kind: ServiceAccount
+  name: {{ . }}
+  namespace: {{ $namespaceName }}
+{{ end }}
+
+# <role.serviceAccounts>
+{{ range $serviceAccounts }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ . }}
+  namespace: {{ $namespaceName }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: {{ . }}
+  namespace: {{ $namespaceName }}
+  annotations:
+    kubernetes.io/service-account.name: {{ . }}
+{{ end }}
+# </role.serviceAccounts>
+
+{{ end }}
+# </namespace.roles>
+
+# <hardResourceQuota>
+{{ if $hardResourceQuota }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ $namespaceName }}
+  namespace: {{ $namespaceName }}
+spec:
+  hard:
+{{ toYaml $hardResourceQuota | indent 4 }}
+{{ end }}
+# </hardResourceQuota>
+
+{{ end }}
+# </namespaces>

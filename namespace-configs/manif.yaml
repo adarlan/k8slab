@@ -1,0 +1,382 @@
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+
+# <namespace.roles>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello-world-dev
+
+# <namespace.roles>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello-world-stg
+
+# <namespace.roles>
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello-world-prd
+
+# <namespace.roles>
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crudify
+
+# <namespace.roles>
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+
+# <namespace.roles>
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: networking
+
+# <namespace.roles>
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security
+
+# <namespace.roles>
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  hard:
+    limits.cpu: "1"
+    limits.memory: 1Gi
+    pods: "10"
+    requests.cpu: "0.25"
+    requests.memory: 256Mi
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: hello-world-dev
+  namespace: hello-world-dev
+spec:
+  hard:
+    limits.cpu: "0.2"
+    limits.memory: 512Mi
+    pods: "5"
+    requests.cpu: "0.05"
+    requests.memory: 128Mi
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: hello-world-stg
+  namespace: hello-world-stg
+spec:
+  hard:
+    limits.cpu: "0.4"
+    limits.memory: 512Mi
+    pods: "10"
+    requests.cpu: "0.1"
+    requests.memory: 128Mi
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: hello-world-prd
+  namespace: hello-world-prd
+spec:
+  hard:
+    limits.cpu: "0.6"
+    limits.memory: 1Gi
+    pods: "15"
+    requests.cpu: "0.15"
+    requests.memory: 128Mi
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: crudify
+  namespace: crudify
+spec:
+  hard:
+    limits.cpu: "1.5"
+    limits.memory: 2Gi
+    pods: "50"
+    requests.cpu: "0.5"
+    requests.memory: 512Mi
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring
+  namespace: monitoring
+spec:
+  hard:
+    limits.cpu: "1"
+    limits.memory: 1Gi
+    pods: "50"
+    requests.cpu: "0.25"
+    requests.memory: 256Mi
+
+# </hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: security
+  namespace: security
+spec:
+  hard:
+    limits.cpu: "0.5"
+    limits.memory: 512Mi
+    pods: "10"
+    requests.cpu: "0.05"
+    requests.memory: 128Mi
+
+# </hardResourceQuota>
+
+
+# </namespaces>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: application-deployer
+  namespace: argocd
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: application-deployer
+  namespace: argocd
+  annotations:
+    kubernetes.io/service-account.name: application-deployer
+
+# </role.serviceAccounts>
+
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: application-deployer
+  namespace: argocd
+
+rules:
+
+# <role.permissions>
+
+
+
+
+
+- apiGroups:
+  - ""
+
+  resources:
+  
+  - "secrets"
+  
+
+  
+  verbs: ["*"]
+  
+
+
+
+
+
+
+- apiGroups:
+  - "argoproj.io"
+
+  resources:
+  
+  - "applications"
+  
+  - "applicationsets"
+  
+
+  
+  verbs: ["*"]
+  
+
+
+# </role.permissions>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+  namespace: hello-world-dev
+
+rules:
+
+# <role.permissions>
+
+
+
+
+
+- apiGroups:
+  - "core"
+
+  resources:
+  
+  - "pods"
+  
+  - "services"
+  
+
+  
+  verbs: ["*"]
+  
+
+
+
+
+
+
+- apiGroups:
+  - "apps"
+
+  resources:
+  
+  - "deployments"
+  
+
+  
+  verbs: ["*"]
+  
+
+
+# </role.permissions>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: application-deployer
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: application-deployer
+
+subjects:
+
+
+
+
+- kind: ServiceAccount
+  name: application-deployer
+  namespace: argocd
+
+
+# <role.serviceAccounts>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer
+  namespace: hello-world-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: developer
+
+subjects:
+
+
+- kind: User
+  name: John Dev
+
+
+
+
+# <role.serviceAccounts>
+
+# </role.serviceAccounts>
+
+
+# </namespace.roles>
+
+# <hardResourceQuota>
+---
+# Source: namespace-configs/templates/namespaces.yaml
+# <namespaces>
