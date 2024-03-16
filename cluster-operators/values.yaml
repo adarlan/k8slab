@@ -1,0 +1,30 @@
+userRoles:
+- name: big-dog
+  permissions:
+  - apiGroup: "*"
+    resources: ["*"]
+    accessMode: readwrite
+  users:
+  - Jane Ops
+
+serviceAccounts:
+- name: cluster-tools-installer
+  permissions:
+  - apiGroup: "*"
+    resources: ["*"]
+    accessMode: readwrite
+- name: namespace-manager
+  permissions:
+  - accessMode: readwrite
+    apiGroup: ""
+    resources:
+    - namespaces
+    - resourcequotas
+    - limitranges
+    - serviceaccounts
+    - secrets
+  - accessMode: readwrite
+    apiGroup: rbac.authorization.k8s.io
+    resources:
+    - roles
+    - rolebindings
