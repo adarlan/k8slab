@@ -1,6 +1,0 @@
-*-role.yaml
-*-role-binding.yaml
-*-csr.yaml
-*.key
-*.csr
-*.crt
