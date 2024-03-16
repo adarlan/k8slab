@@ -1,4 +1,6 @@
 script.sh
+*.script.sh
+
 *.key
 *.csr
 *-csr.yaml
