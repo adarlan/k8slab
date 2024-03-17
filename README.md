@@ -15,52 +15,72 @@ A collection of components designed to simplify the provisioning and management 
 - Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
 - [Docker Engine](https://docs.docker.com/engine/) for containerization of applications.
 
-## Local cluster
+## Installing CLI tools
 
-### Provisioning local cluster with Terraform (~2 minutes)
-
-Provisioning a KinD (Kubernetes-in-Docker) cluster in the local environment using Terraform.
-You could use the `kind` CLI to create the cluster, but to make it more like a real environment, we will use Terraform.
+Using the `asdf` version manager to install the CLI tools defined in the [.tool-versions](./.tool-versions) file.
 
 ```bash
-tfenv install 1.7.3
-tfenv use 1.7.3
+while IFS= read -r toolVersion; do
+  asdf plugin add $(echo $toolVersion | awk '{print $1}')
+  asdf install $toolVersion
+done < .tool-versions
+```
 
+## Provisioning local cluster (~2 minutes)
+
+Provisioning a KinD (Kubernetes-in-Docker) cluster in your local environment.
+
+You could use the `kind` CLI tool to create the cluster,
+but we will use `terraform` to make it more like a real environment.
+
+The local cluster Terraform configuration is defined in the [local-cluster](./local-cluster) directory.
+
+```bash
 terraform -chdir=local-cluster init
 
 TF_LOG="INFO" \
 terraform -chdir=local-cluster apply -auto-approve
 ```
 
-## Role-Based Access Control (RBAC)
-
-### Retrieving cluster credentials
+## Retrieving cluster credentials
 
 The directory `/etc/kubernetes/pki/` of a control-plane node typically contains the Public Key Infrastructure (PKI) assets used by the Kubernetes control-plane components for secure communication and authentication within the cluster.
 
 ```bash
-# Retrieving cluster's Certificate Authority (CA) key and certificate
+# Retrieving cluster's Certificate Authority (CA) key
 docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.key cluster-ca.key
+
+# Retrieving cluster's Certificate Authority (CA) certificate
 docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt cluster-ca.crt
 
 # Retrieving cluster's endpoint
 terraform -chdir=local-cluster output -raw endpoint > cluster-endpoint.txt
-
-# Retrieving root user's key and certificate
-terraform -chdir=local-cluster output -raw root_user_key > root.key
-terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-### Setting cluster entry in kubeconfig
+## Setting cluster entry in kubeconfig
 
-When you create a KinD cluster, a kubeconfig file is automatically configured to access the cluster, but we won't use it. Instead, we will set up the kubeconfig from scratch.
+KinD automatically sets up a kubeconfig to access the cluster, but we won't use it.
+Instead, we will set up the kubeconfig from scratch.
 
 ```bash
 # Setting cluster entry in kubeconfig
-kubectl config set-cluster k8slab --server=$(cat cluster-endpoint.txt) --certificate-authority=cluster-ca.crt --embed-certs=true
+kubectl config set-cluster k8slab \
+--server=$(cat cluster-endpoint.txt) \
+--certificate-authority=cluster-ca.crt \
+--embed-certs=true
 ```
 
-### Setting root user in kubeconfig
+## Retrieving root user credentials
+
+```bash
+# Retrieving root user key
+terraform -chdir=local-cluster output -raw root_user_key > root.key
+
+# Retrieving root user certificate
+terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
+```
+
+## Setting root user in kubeconfig
 
 ```bash
 # Setting user entry in kubeconfig
@@ -68,41 +88,119 @@ kubectl config set-credentials k8slab-root --client-key=root.key --client-certif
 
 # Setting context entry in kubeconfig
 kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
-
-# Switching to root user
-kubectl config use-context k8slab-root
 ```
 
-### Granting user credentials
+## Grating cluster operators access
 
-Let's create two dummy users:
+Cluster operators are cluster-level users and service accounts that will be given cluster roles.
 
-- John Dev, who will be given the 'developer' role.
-- Jane Ops, who will be given the 'administrator' cluster-role.
+```bash
+cluster_root_user_credentials_helm="
+  --kube-context=k8slab-root
+"
 
-#### Generating private keys and Certificate Signing Request (CSR) files
+release=cluster-operators
+chart=./cluster-operators
+values=./cluster-operators/values.yaml
+namespace=cluster-operators
+
+list=$(helm $cluster_root_user_credentials_helm list --short -n $namespace)
+echo "$list" | grep -q "^$release$" \
+&& helm $cluster_root_user_credentials_helm upgrade $release --values $values $chart -n $namespace \
+|| helm $cluster_root_user_credentials_helm install $release --values $values $chart -n $namespace --create-namespace
+```
+
+## Retrieving cluster-level service account tokens
+
+In a real environment, these tokens would typically be incorporated into CI/CD secrets.
+However, for the purposes of this simulation, let's store them in files instead.
+
+```bash
+cluster_root_user_credentials_kubectl="
+  --context=k8slab-root
+"
+
+# Retrieving namespace-manager service account token
+kubectl $cluster_root_user_credentials_kubectl \
+get secret namespace-manager --namespace namespace-manager \
+-o jsonpath='{.data.token}' | base64 --decode > namespace-manager.token
+
+# Retrieving cluster-tools-installer service account token
+kubectl $cluster_root_user_credentials_kubectl \
+get secret cluster-tools-installer --namespace cluster-tools-installer \
+-o jsonpath='{.data.token}' | base64 --decode > cluster-tools-installer.token
+```
+
+## Applying namespace-configs
+
+Configuring namespaces, as well as their:
+- service accounts,
+- service account secrets,
+- roles,
+- user and service account role bindings,
+- resource quotas,
+- and limit ranges.
+
+```bash
+namespace_manager_credentials_helm="
+  --kube-apiserver=$(cat cluster-endpoint.txt)
+  --kube-ca-file=cluster-ca.crt
+  --kube-token=$(cat namespace-manager.token)
+"
+
+release=namespace-configs
+chart=./namespace-configs
+values=./namespace-configs/values.yaml
+namespace=namespace-configs
+
+list=$(helm $namespace_manager_credentials_helm list --short -n $namespace)
+echo "$list" | grep -q "^$release$" \
+&& helm $namespace_manager_credentials_helm upgrade $release --values $values $chart -n $namespace \
+|| helm $namespace_manager_credentials_helm install $release --values $values $chart -n $namespace --create-namespace
+```
+
+## Retrieving namespace-level service account tokens
+
+```bash
+namespace_manager_credentials_kubectl="
+  --server=$(cat cluster-endpoint.txt)
+  --certificate-authority=cluster-ca.crt
+  --token=$(cat namespace-manager.token)
+"
+
+# Retrieving argocd application-deployer service account token
+kubectl $namespace_manager_credentials_kubectl \
+get secret application-deployer -n argocd \
+-o jsonpath='{.data.token}' | base64 --decode > argocd-application-deployer.token
+```
+
+## Granting user credentials
+
+To facilitate your interaction with the cluster using the `kubectl` CLI,
+we will create dummy user credentials and set up them in kubeconfig.
+
+To simulate a user,
+simply run `kubectl config use-context <username>` before your `kubectl` command
+or add the `--context <username>` option to your `kubectl` command.
+
+Usernames:
+
+- `johndev`
+- `janeops`
 
 ```bash
 # Generating private keys
 openssl genrsa -out johndev.key 2048
 openssl genrsa -out janeops.key 2048
 
-# Generating CSR files
+# Generating Certificate Signing Request (CSR) files
 openssl req -new -key johndev.key -out johndev.csr -subj "/CN=John Dev"
 openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
-```
 
-#### Signing certificates
-
-```bash
 # Signing certificates
 openssl x509 -req -in johndev.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out johndev.crt -days 1
 openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
-```
 
-#### Setting user credentials in kubeconfig
-
-```bash
 # Setting user entries in kubeconfig
 kubectl config set-credentials k8slab-johndev --client-key=johndev.key --client-certificate=johndev.crt --embed-certs=true
 kubectl config set-credentials k8slab-janeops --client-key=janeops.key --client-certificate=janeops.crt --embed-certs=true
@@ -110,36 +208,6 @@ kubectl config set-credentials k8slab-janeops --client-key=janeops.key --client-
 # Setting context entries in kubeconfig
 kubectl config set-context k8slab-johndev --cluster=k8slab --user=k8slab-johndev
 kubectl config set-context k8slab-janeops --cluster=k8slab --user=k8slab-janeops
-```
-
-### Applying RBAC resources
-
-This will create the 'developer' role and the 'administrator' cluster-role,
-as well as bind them to 'John Dev' and 'Jane Ops' users, respectively.
-
-This will also create the 'cluster-tools-installer' and 'argocd-application-deployer' service accounts.
-
-```bash
-# Applying RBAC resources
-kubectl apply -f rbac/ \
---prune -l selection=rbac \
---prune-allowlist=rbac.authorization.k8s.io/v1/ClusterRole \
---prune-allowlist=rbac.authorization.k8s.io/v1/ClusterRoleBinding \
---prune-allowlist=rbac.authorization.k8s.io/v1/Role \
---prune-allowlist=rbac.authorization.k8s.io/v1/RoleBinding
-```
-
-### Retrieving service account tokens
-
-In a real environment, these tokens would typically be incorporated into the CI/CD secrets.
-However, for the purposes of this simulation, let's store them in files instead.
-
-```bash
-# Retrieving cluster-tools-installer service account token
-kubectl get secret cluster-tools-installer -o jsonpath='{.data.token}' | base64 --decode > cluster-tools-installer.token
-
-# Retrieving argocd-application-deployer service account token
-kubectl get secret argocd-application-deployer -n argocd -o jsonpath='{.data.token}' | base64 --decode > argocd-application-deployer.token
 ```
 
 ## Cluster tools
@@ -156,24 +224,6 @@ These tools can be installed in 3 ways:
 
 We'll use Terraform to install Argo CD and then use Argo CD to install the other tools.
 
-### Setting the maximum number of file system notification subscribers
-
-The `fs.inotify` Linux kernel subsystem can be used to register for notifications when specific files or directories are modified, accessed, or deleted.
-
-Let's increase the value of the `fs.inotify.max_user_instances` parameter to prevent some containers in the monitoring stack from crashing due to "too many open files" while watching for changes in the log files.
-
-Since both host and containers share the same kernel, configuring it on the host also applies to the Docker containers that KinD uses as cluster nodes, and also to the pod's containers running inside those nodes.
-
-This value is reset when the system restarts.
-
-TODO Move it to a pod initializer
-
-```bash
-if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
-  docker run -it --rm --privileged alpine sysctl -w fs.inotify.max_user_instances=1024
-fi
-```
-
 ### Installing Argo CD with Terraform (~5 minutes)
 
 We'll use the Terraform `-target` option to limit the operation to only the `helm_release.argocd_stack` resource and its dependencies.
@@ -184,81 +234,136 @@ Terraform will warn "Resource targeting is in effect" and "Applied changes may b
 but for the purposes of this simulation you can ignore these messages.
 
 ```bash
+cluster_tools_installer_credentials_terraform="
+  -var cluster_endpoint=$(cat cluster-endpoint.txt)
+  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
+  -var service_account_token=$(realpath cluster-tools-installer.token)
+"
+
 terraform -chdir=cluster-tools init
 
 TF_LOG=INFO \
-terraform -chdir=cluster-tools apply \
--var cluster_ca_certificate=../cluster-ca.crt \
--var service_account_token=../cluster-tools-installer.token \
--var cluster_endpoint=$(cat cluster-endpoint.txt) \
--auto-approve -parallelism=1 \
+terraform -chdir=cluster-tools \
+apply $cluster_tools_installer_credentials_terraform \
+-auto-approve \
+-parallelism=1 \
 -target=helm_release.argocd_stack
 ```
 
-### Argo CD CLI login
+### Retrieving Argo CD admin password
+
+```bash
+cluster_operator_user_credentials_kubectl="
+  --context k8slab-janeops
+"
+
+kubectl $cluster_operator_user_credentials_kubectl \
+get secret argocd-initial-admin-secret -n argocd \
+-o jsonpath="{.data.password}" | base64 --decode > argocd-admin.password
+```
+
+### Logging in to Argo CD with its CLI tool
 
 TODO Using the --grpc-web flag because ingressGrpc is not yet configured
 
 ```bash
-argocd login --grpc-web --insecure \
-argocd.localhost \
---username admin \
---password $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
+argocd_admin_credentials_argocd_login="
+  --username admin
+  --password $(cat argocd-admin.password)
+"
+
+argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials_argocd_login
 ```
+
+### Accessing Argo CD in your browser
+
+- http://argocd.localhost
+- Username: `admin`
+- The password is stored in the `argocd-admin.password` file
+
+<!-- COMMAND nohup xdg-open http://argocd.localhost > /dev/null 2>&1 -->
 
 ### Installing cluster tools with Argo CD
 
 ```bash
-kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
-apply -n argocd -f argocd/toolkit-applications/ \
---prune -l selection=toolkit-applications \
---prune-allowlist=argoproj.io/v1alpha1/Application
+argocd_application_deployer_credentials_helm="
+  --kube-apiserver=$(cat cluster-endpoint.txt)
+  --kube-ca-file=$(realpath cluster-ca.crt)
+  --kube-token=$(cat argocd-application-deployer.token)
+"
+
+release=cluster-tools-argocd-apps
+chart=./cluster-tools/.argocd-apps
+values=./cluster-tools/.argocd-apps/values.yaml
+namespace=argocd
+
+list=$(helm $argocd_application_deployer_credentials_helm list --short -n $namespace)
+echo "$list" | grep -q "^$release$" \
+&& helm $argocd_application_deployer_credentials_helm upgrade $release --values $values $chart -n $namespace \
+|| helm $argocd_application_deployer_credentials_helm install $release --values $values $chart -n $namespace
 ```
 
-### Waiting cluster tools synchronization (~20 minutes)
+### Waiting security stack synchronization
 
-The monitoring-stack usually takes a long time to synchronize,
+```bash
+argocd app wait security-stack
+```
+
+### Waiting monitoring stack synchronization
+
+The monitoring stack usually takes a long time to synchronize,
 and its health state usually transitions to 'Degraded' at some point during the synchronization,
 causing the `argocd app wait` command to fail, despite the synchronization process continuing.
-Because of this we will retry two more times.
+Because of this we will try to wait two more times.
 
 ```bash
 retries=0
-until argocd app wait -l selection=toolkit-applications; do
-  ((++retries)); if [ $retries -ge 3 ]; then break; fi
+until argocd app wait monitoring-stack; do
+  ((++retries)); if [ $retries -ge 3 ]; then exit 1; fi
 done
 ```
 
-### Accessing Argo CD
+<!-- TODO promtail error:
+level=error 
+caller=main.go:170 
+msg="error creating promtail" 
+error="failed to make file target manager: too many open files"
+-->
 
-After installing Argo CD with Terraform,
-you can access its user interface in your browser:
+<!-- TODO loki-logs error:
+caller=main.go:74 
+level=error 
+msg="error creating the agent server entrypoint" 
+err="unable to apply config for monitoring/monitoring-stack-loki: unable to create logs instance: failed to make file target manager: too many open files"
+-->
 
-- [http://argocd.localhost](http://argocd.localhost/login?return_url=http%3A%2F%2Fargocd.localhost%2Fapplications)
+<!-- https://maestral.app/docs/inotify-limits -->
+
+### Accessing Prometheus in your browser
+
+- http://prometheus.localhost
+
+<!-- COMMAND nohup xdg-open http://prometheus.localhost > /dev/null 2>&1 -->
+
+### Retrieving Grafana admin password
 
 ```bash
-# Retrieving 'admin' password
-echo $(kubectl --context k8slab-janeops get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode) > argocd-admin.password
+cluster_operator_user_credentials_kubectl="
+  --context k8slab-janeops
+"
+
+kubectl $cluster_operator_user_credentials_kubectl \
+get secret monitoring-stack-grafana -n monitoring \
+-o jsonpath="{.data.admin-password}" | base64 --decode > grafana-admin.password
 ```
 
-### Accessing Grafana
+### Accessing Grafana in your browser
 
-After installing the cluster tools with Argo CD and synchronizing the monitoring-stack,
-you can access Grafana in your browser:
+- http://grafana.localhost
+- Username: `admin`
+- The password is stored in the `grafana-admin.password` file
 
-- [http://grafana.localhost](http://grafana.localhost)
-
-```bash
-# Retrieving 'admin' password
-echo $(kubectl --context k8slab-janeops get secret -n monitoring monitoring-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode) > grafana-admin.password
-```
-
-### Accessing Prometheus
-
-After installing the cluster tools with Argo CD and synchronizing the monitoring-stack,
-you can access Prometheus in your browser:
-
-- [http://prometheus.localhost](http://prometheus.localhost)
+<!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
 
 ## Applications
 
