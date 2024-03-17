@@ -1,12 +1,5 @@
 # Installing cluster tools with Helm
 
-Before proceeding, execute each of the following commands in a new tab in your terminal to watch the pods start up:
-
-- `watch -n 1 kubectl get pods --namespace ingress`
-- `watch -n 1 kubectl get pods --namespace monitoring`
-- `watch -n 1 kubectl get pods --namespace trivy`
-- `watch -n 1 kubectl get pods --namespace argocd`
-
 ```bash
 cluster_tools_installer_credentials_helm="
   --kube-apiserver=$(cat cluster-endpoint.txt)
@@ -46,7 +39,7 @@ install-or-upgrade-cluster-tool() {
   repo_url=https://kubernetes.github.io/ingress-nginx \
   chart_name=ingress-nginx \
   chart_version=4.10.0 \
-  values_file=new-cluster-tools/ingress-nginx/values.yaml \
+  values_file=cluster-tools/values/ingress-nginx.values.yaml \
   namespace=ingress \
   install-or-upgrade-cluster-tool
 )
@@ -58,7 +51,7 @@ install-or-upgrade-cluster-tool() {
   repo_url=https://grafana.github.io/helm-charts \
   chart_name=loki \
   chart_version=5.43.3 \
-  values_file=new-cluster-tools/loki/values.yaml \
+  values_file=cluster-tools/values/loki.values.yaml \
   namespace=monitoring \
   install-or-upgrade-cluster-tool
 )
@@ -70,7 +63,7 @@ install-or-upgrade-cluster-tool() {
   repo_url=https://grafana.github.io/helm-charts \
   chart_name=promtail \
   chart_version=6.15.5 \
-  values_file=new-cluster-tools/promtail/values.yaml \
+  values_file=cluster-tools/values/promtail.values.yaml \
   namespace=monitoring \
   install-or-upgrade-cluster-tool
 )
@@ -82,7 +75,7 @@ install-or-upgrade-cluster-tool() {
   repo_url=https://prometheus-community.github.io/helm-charts \
   chart_name=kube-prometheus-stack \
   chart_version=56.6.2 \
-  values_file=new-cluster-tools/kube-prometheus-stack/values.yaml \
+  values_file=cluster-tools/values/kube-prometheus-stack.values.yaml \
   namespace=monitoring \
   install-or-upgrade-cluster-tool
 )
@@ -94,7 +87,7 @@ install-or-upgrade-cluster-tool() {
   repo_url=https://aquasecurity.github.io/helm-charts \
   chart_name=trivy-operator \
   chart_version=0.20.6 \
-  values_file=new-cluster-tools/trivy-operator/values.yaml \
+  values_file=cluster-tools/values/trivy-operator.values.yaml \
   namespace=trivy \
   install-or-upgrade-cluster-tool
 )
@@ -106,7 +99,7 @@ install-or-upgrade-cluster-tool() {
   repo_url=https://argoproj.github.io/argo-helm \
   chart_name=argo-cd \
   chart_version=6.4.1 \
-  values_file=new-cluster-tools/argo-cd/values.yaml \
+  values_file=cluster-tools/values/argo-cd.values.yaml \
   namespace=argocd \
   install-or-upgrade-cluster-tool
 )
@@ -115,10 +108,56 @@ install-or-upgrade-cluster-tool() {
 ## Uninstalling
 
 ```bash
-helm uninstall argo-cd --namespace argocd
-helm uninstall trivy-operator --namespace trivy
-helm uninstall kube-prometheus-stack --namespace monitoring
-helm uninstall promtail --namespace monitoring
-helm uninstall loki --namespace monitoring
-helm uninstall ingress-nginx --namespace ingress
+cluster_tools_installer_credentials_helm="
+  --kube-apiserver=$(cat cluster-endpoint.txt)
+  --kube-ca-file=$(realpath cluster-ca.crt)
+  --kube-token=$(cat cluster-tools-installer.token)
+"
+
+cluster_tools_installer_credentials_kubectl="
+  --server=$(cat cluster-endpoint.txt)
+  --certificate-authority=$(realpath cluster-ca.crt)
+  --token=$(cat cluster-tools-installer.token)
+"
+
+uninstall-cluster-tool() {
+  helm $cluster_tools_installer_credentials_helm \
+  uninstall \
+  $release_name \
+  --namespace $namespace
+}
+
+release_name=argo-cd \
+namespace=argocd \
+uninstall-cluster-tool
+
+release_name=trivy-operator \
+namespace=trivy \
+uninstall-cluster-tool
+
+release_name=kube-prometheus-stack \
+namespace=monitoring \
+uninstall-cluster-tool
+
+release_name=promtail \
+namespace=monitoring \
+uninstall-cluster-tool
+
+release_name=loki \
+namespace=monitoring \
+uninstall-cluster-tool
+
+release_name=ingress-nginx \
+namespace=ingress \
+uninstall-cluster-tool
+
+wait-pods-delete() {
+  kubectl $cluster_tools_installer_credentials_kubectl \
+  wait pods --namespace=$namespace --all=true --for=delete --timeout=1200s
+}
+
+namespace=argocd wait-pods-delete
+namespace=trivy wait-pods-delete
+namespace=monitoring wait-pods-delete
+namespace=ingress wait-pods-delete
 ```
