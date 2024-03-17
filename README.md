@@ -214,13 +214,17 @@ kubectl config set-context k8slab-janeops --cluster=k8slab --user=k8slab-janeops
 
 Cluster tools is a collection of Helm charts that extend the functionality of the Kubernetes cluster,
 improving deployments, security, networking, monitoring, etc.,
-by adding tools such as Argo CD, Prometheus, Grafana, Loki, Trivy Operator, Ingress NGINX Controller, and more.
+by adding tools such as Argo CD, Prometheus, Grafana, Loki, Promtail, Trivy Operator, Ingress NGINX Controller, and more.
 
 These tools can be installed in 3 ways:
 
 - Using Helm
 - Using Terraform
 - Using Argo CD (in this case, Argo CD must be installed first with Helm or Terraform)
+
+Let's use Helm!
+
+##
 
 We'll use Terraform to install Argo CD and then use Argo CD to install the other tools.
 
