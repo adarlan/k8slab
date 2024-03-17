@@ -1,0 +1,4 @@
+terraform 1.7.5
+kubectl 1.29.3
+helm 3.14.3
+argocd 2.10.3
