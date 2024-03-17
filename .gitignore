@@ -8,3 +8,5 @@ script.sh
 *.token
 *-endpoint.txt
 *.password
+
+nohup.out
