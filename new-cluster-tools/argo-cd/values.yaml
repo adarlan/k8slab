@@ -1,0 +1,17 @@
+configs:
+  params:
+    server.insecure: true
+  cm:
+    timeout.reconciliation: 30s
+crds:
+  keep: false
+global:
+  domain: argocd.localhost
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
