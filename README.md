@@ -30,6 +30,8 @@ To execute these steps automatically, use the [`run.sh`](./run.sh) script:
 - `./run.sh up`
 - `./run.sh down`
 
+<!-- FUNCTION up -->
+
 ## 1. CLI Tools Installation
 
 This step involves installing the necessary command-line interface (CLI) tools required for managing and interacting with your local Kubernetes environment.
@@ -150,6 +152,7 @@ To use her credentials,
 simply run `kubectl config use-context janeops` before your `kubectl` commands
 or add the `--context janeops` option to each `kubectl` command.
 
+<!-- IFNOT kubectl --context janeops whoami -->
 ```bash
 # Generating private key
 openssl genrsa -out janeops.key 2048
@@ -218,6 +221,7 @@ To use his credentials,
 simply run `kubectl config use-context johndev` before your `kubectl` commands
 or add the `--context johndev` option to each `kubectl` command.
 
+<!-- IFNOT kubectl --context johndev whoami -->
 ```bash
 # Generating private key
 openssl genrsa -out johndev.key 2048
@@ -250,13 +254,29 @@ cluster_tools_installer_credentials_terraform="
   -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
 "
 
-terraform -chdir=cluster-tools init
+name=loki
+terraform -chdir=cluster-tools/$name init
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
 
-TF_LOG=INFO \
-terraform -chdir=cluster-tools \
-apply $cluster_tools_installer_credentials_terraform \
--auto-approve \
--parallelism=1
+name=promtail
+terraform -chdir=cluster-tools/$name init
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+
+name=ingress-nginx
+terraform -chdir=cluster-tools/$name init
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+
+name=kube-prometheus-stack
+terraform -chdir=cluster-tools/$name init
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+
+name=argo-cd
+terraform -chdir=cluster-tools/$name init
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+
+name=trivy-operator
+terraform -chdir=cluster-tools/$name init
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
 ```
 
 During the installation,
@@ -270,13 +290,13 @@ you can execute each of the following commands in a new tab in your terminal to 
 ### Retrieving Argo CD admin password
 
 ```bash
-terraform -chdir=cluster-tools output -raw argocd_admin_password > argocd-admin.password
+terraform -chdir=cluster-tools/argo-cd output -raw admin_password > argocd-admin.password
 ```
 
 ### Retrieving Grafana admin password
 
 ```bash
-terraform -chdir=cluster-tools output -raw grafana_admin_password > grafana-admin.password
+terraform -chdir=cluster-tools/kube-prometheus-stack output -raw grafana_admin_password > grafana-admin.password
 ```
 
 ### Logging in to Argo CD with its CLI tool
@@ -311,6 +331,8 @@ argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials
 - The password is stored in the `grafana-admin.password` file
 
 <!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
+
+<!-- FUNCTION dont -->
 
 ## 6. Application Deployments
 
@@ -613,16 +635,16 @@ Finally, the Kubernetes cluster itself is destroyed.
 ### Undeploying applications
 
 ```bash
-# crudify
-helm --kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token) \
-uninstall argocd-apps -n argocd
+# # crudify
+# helm --kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token) \
+# uninstall argocd-apps -n argocd
 
-# hello-world
-kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
-delete \
--n argocd \
--f argocd/application-sets/ \
--l selection=application-sets
+# # hello-world
+# kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
+# delete \
+# -n argocd \
+# -f argocd/application-sets/ \
+# -l selection=application-sets
 ```
 
 ### Uninstalling cluster tools
@@ -634,9 +656,12 @@ cluster_tools_installer_credentials_terraform="
   -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
 "
 
-terraform -chdir=cluster-tools \
-destroy $cluster_tools_installer_credentials_terraform \
--auto-approve
+terraform -chdir=cluster-tools/trivy-operator destroy $cluster_tools_installer_credentials_terraform -auto-approve
+terraform -chdir=cluster-tools/argo-cd destroy $cluster_tools_installer_credentials_terraform -auto-approve
+terraform -chdir=cluster-tools/kube-prometheus-stack destroy $cluster_tools_installer_credentials_terraform -auto-approve
+terraform -chdir=cluster-tools/ingress-nginx destroy $cluster_tools_installer_credentials_terraform -auto-approve
+terraform -chdir=cluster-tools/promtail destroy $cluster_tools_installer_credentials_terraform -auto-approve
+terraform -chdir=cluster-tools/loki destroy $cluster_tools_installer_credentials_terraform -auto-approve
 ```
 
 ### Destroying cluster
