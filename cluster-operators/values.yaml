@@ -1,5 +1,5 @@
 userRoles:
-- name: big-dog
+- name: cluster-administrator
   permissions:
   - apiGroup: "*"
     resources: ["*"]
