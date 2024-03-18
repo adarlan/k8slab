@@ -51,7 +51,7 @@ spec:
 
       source:
         repoURL: https://github.com/adarlan/k8slab.git
-        path: deployable-apps/hello-world
+        path: deploy/hello-world
         targetRevision: "{{targetRevision}}"
         helm:
           releaseName: "{{appName}}"

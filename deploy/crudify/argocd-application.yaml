@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/adarlan/k8slab.git
     targetRevision: master
-    path: deployable-apps/crudify
+    path: deploy/crudify
 
     helm:
       releaseName: crudify

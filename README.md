@@ -367,7 +367,7 @@ The source-code of the applications reside in the [`apps`](./apps/) directory.
 
 GitHub Actions workflows are configured to test, build and push the Docker images of the applications to Docker Hub.
 
-The deployment configuration of the applications reside in the [`deployable-apps`](./deployable-apps/) directory.
+The deployment configuration of the applications reside in the [`deploy`](./deploy/) directory.
 
 Argo CD watches the deployment configurations to deploy and synchronize changes onto the cluster.
 
@@ -401,7 +401,7 @@ and deployed with a different number of replicas.
 | `hello-world` | `production`  | `8`      | `http://hello.localhost`     | `Hello, World!`    |
 
 You can change this configuration by editing the
-[`deployable-apps/hello-world/argocd-application-set.yaml`](./deployable-apps/hello-world/argocd-application-set.yaml)
+[`deploy/hello-world/argocd-application-set.yaml`](./deploy/hello-world/argocd-application-set.yaml)
 file.
 
 This action requires the Argo CD application deployer credentials.
@@ -416,7 +416,7 @@ argocd_application_deployer_credentials="
 kubectl $argocd_application_deployer_credentials \
 apply \
 --namespace argocd \
---filename deployable-apps/hello-world/argocd-application-set.yaml
+--filename deploy/hello-world/argocd-application-set.yaml
 ```
 
 #### Waiting Hello World synchronization
@@ -542,7 +542,7 @@ argocd_application_deployer_credentials="
 kubectl $argocd_application_deployer_credentials \
 apply \
 --namespace argocd \
---filename deployable-apps/crudify/argocd-application.yaml
+--filename deploy/crudify/argocd-application.yaml
 ```
 
 #### CRUDify synchronization
