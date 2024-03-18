@@ -73,7 +73,7 @@ namespaces:
   #   requests.memory: 256Mi
   #   limits.memory: 1Gi
 
-- name: networking
+- name: ingress
 #   hardResourceQuota:
 #     pods: "10"
 #     requests.cpu: "0.05"
@@ -81,7 +81,7 @@ namespaces:
 #     requests.memory: 128Mi
 #     limits.memory: 512Mi
 
-- name: security
+- name: trivy
   # hardResourceQuota:
   #   pods: "10"
   #   requests.cpu: "0.05"
