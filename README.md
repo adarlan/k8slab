@@ -1,26 +1,26 @@
 # K8sLab
 
-A project designed to explore and experiment with a local [Kubernetes](https://kubernetes.io/) cluster
+A project intended for exploring and piloting a local [Kubernetes](https://kubernetes.io/) cluster
 bundled with popular open-source tools and example applications,
-simulating a real platform.
+simulating a real environment.
 
-The simulation includes:
+This simulation includes:
 
 - [Terraform](https://www.terraform.io/) for resource provisioning
 - [Helm](https://helm.sh/) for package management
+- [Kustomize](https://kustomize.io/) for deployment configuration
 - [Argo CD](https://argoproj.github.io/cd/) for continuous deployment
 - [Ingress-Nginx Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
 - [Prometheus](https://prometheus.io/) for metrics and alerts
 - [Grafana](https://grafana.com/grafana/) for dashboard visualization
 - [Grafana Loki](https://grafana.com/oss/loki/) for log aggregation
-- [Trivy Operator](https://aquasecurity.github.io/trivy-operator) for continuous security scan
 
 Run the simulation by following these steps:
 
 1. CLI Tools Installation
 2. Cluster Provisioning
-3. Cluster Operators Authorization
-4. Namespace Configurations
+3. Cluster-Level RBAC
+4. Namespace-Level RBAC & Resource Management
 5. Cluster Tools Installation
 6. Application Deployments
 7. Cleanup and Tear Down
