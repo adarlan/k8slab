@@ -242,3 +242,15 @@ PrometheusRule?
 ### CRUDify Horizontal Pod Autoscaler
 
 HPA
+
+## RBAC
+
+The directory `/etc/kubernetes/pki/` of a control-plane node typically contains the Public Key Infrastructure (PKI) assets used by the Kubernetes control-plane components for secure communication and authentication within the cluster.
+
+```bash
+# Retrieving cluster's Certificate Authority (CA) key
+docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.key cluster-ca.key
+
+# Retrieving cluster's Certificate Authority (CA) certificate
+docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt cluster-ca.crt
+```

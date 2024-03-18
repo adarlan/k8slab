@@ -79,32 +79,20 @@ terraform -chdir=local-cluster apply -auto-approve
 This step involves configuring Role-Based Access Control (RBAC) resources,
 as well as setting namespace limit ranges and resource quotas.
 
-### Retrieving cluster credentials
-
-The directory `/etc/kubernetes/pki/` of a control-plane node typically contains the Public Key Infrastructure (PKI) assets used by the Kubernetes control-plane components for secure communication and authentication within the cluster.
-
-```bash
-# Retrieving cluster's Certificate Authority (CA) key
-docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.key cluster-ca.key
-
-# Retrieving cluster's Certificate Authority (CA) certificate
-docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt cluster-ca.crt
-
-# Retrieving cluster's endpoint
-terraform -chdir=local-cluster output -raw endpoint > cluster-endpoint.txt
-```
-
-### Setting cluster entry in kubeconfig
-
 KinD automatically sets up a kubeconfig to access the cluster, but we won't use it.
 Instead, we will set up the kubeconfig from scratch.
 
+### Retrieving cluster credentials
+
 ```bash
-# Setting cluster entry in kubeconfig
-kubectl config set-cluster k8slab \
---server=$(cat cluster-endpoint.txt) \
---certificate-authority=cluster-ca.crt \
---embed-certs=true
+# Retrieving cluster endpoint
+terraform -chdir=local-cluster output -raw endpoint > cluster-endpoint.txt
+
+# Retrieving cluster CA key
+terraform -chdir=local-cluster output -raw ca_key > cluster-ca.key
+
+# Retrieving cluster CA certificate
+terraform -chdir=local-cluster output -raw ca_certificate > cluster-ca.crt
 ```
 
 ### Retrieving root user credentials
@@ -117,34 +105,24 @@ terraform -chdir=local-cluster output -raw root_user_key > root.key
 terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-### Setting root user in kubeconfig
-
-```bash
-# Setting user entry in kubeconfig
-kubectl config set-credentials k8slab-root --client-key=root.key --client-certificate=root.crt --embed-certs=true
-
-# Setting context entry in kubeconfig
-kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
-```
-
 ### Grating cluster operators access
 
 Cluster operators are cluster-level users and service accounts that will be given cluster roles.
 
 ```bash
-cluster_root_user_credentials_helm="
-  --kube-context=k8slab-root
+cluster_root_user_credentials_terraform="
+  -var cluster_endpoint=$(cat cluster-endpoint.txt)
+  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
+  -var root_user_key=$(realpath root.key)
+  -var root_user_certificate=$(realpath root.crt)
 "
 
-release=cluster-operators
-chart=./cluster-operators
-values=./cluster-operators/values.yaml
-namespace=cluster-operators
+terraform -chdir=cluster-operators init
 
-list=$(helm $cluster_root_user_credentials_helm list --short -n $namespace)
-echo "$list" | grep -q "^$release$" \
-&& helm $cluster_root_user_credentials_helm upgrade $release --values $values $chart -n $namespace \
-|| helm $cluster_root_user_credentials_helm install $release --values $values $chart -n $namespace --create-namespace
+TF_LOG=INFO \
+terraform -chdir=cluster-operators \
+apply $cluster_root_user_credentials_terraform \
+-auto-approve
 ```
 
 ### Retrieving cluster-level service account tokens
@@ -153,19 +131,28 @@ In a real environment, these tokens would typically be incorporated into CI/CD s
 However, for the purposes of this simulation, let's store them in files instead.
 
 ```bash
-cluster_root_user_credentials_kubectl="
-  --context=k8slab-root
-"
-
 # Retrieving namespace-manager service account token
-kubectl $cluster_root_user_credentials_kubectl \
-get secret namespace-manager --namespace namespace-manager \
--o jsonpath='{.data.token}' | base64 --decode > namespace-manager.token
+terraform -chdir=cluster-operators output -raw namespace_manager_token > namespace-manager.token
 
 # Retrieving cluster-tools-installer service account token
-kubectl $cluster_root_user_credentials_kubectl \
-get secret cluster-tools-installer --namespace cluster-tools-installer \
--o jsonpath='{.data.token}' | base64 --decode > cluster-tools-installer.token
+terraform -chdir=cluster-operators output -raw cluster_tools_installer_token > cluster-tools-installer.token
+```
+
+### Setting cluster entry in kubeconfig
+
+```bash
+# Setting cluster entry in kubeconfig
+kubectl config set-cluster k8slab --server=$(cat cluster-endpoint.txt) --certificate-authority=$(realpath cluster-ca.crt) --embed-certs=true
+```
+
+### Setting root user in kubeconfig
+
+```bash
+# Setting user entry in kubeconfig
+kubectl config set-credentials k8slab-root --client-key=root.key --client-certificate=root.crt --embed-certs=true
+
+# Setting context entry in kubeconfig
+kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
 ```
 
 ### Applying namespace-configs
