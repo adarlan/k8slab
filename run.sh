@@ -17,9 +17,14 @@ echo ":" >> script.sh
 isCommand="false"
 
 printf_title=""
+press_enter_to_continue="false"
 add_title() {
     [ "$printf_title" != "" ] && echo $printf_title >> script.sh
     printf_title=""
+    if [ "$press_enter_to_continue" = "true" ]; then
+        echo 'read -p "Press Enter to continue..."' >> script.sh
+        press_enter_to_continue="false"
+    fi
 }
 
 while IFS= read -r line; do
@@ -45,9 +50,10 @@ while IFS= read -r line; do
         
         elif [[ "$line" == \#* ]]; then
             # TITLE
-            # echo "printf \"\\e[1;34m$line\\e[0m\\n\"" >> script.sh
+            if [[ $line =~ ^\#\#\ .*$ ]]; then
+                press_enter_to_continue="true"
+            fi
             printf_title="printf \"\\e[1;34m$line\\e[0m\\n\""
-            # echo 'read -p "Press Enter to continue..."' >> script.sh
 
         elif [[ $line =~ ^\<\!\-\-\ FUNCTION\ ([a-z_]+)\ \-\-\>$ ]]; then
             # FUNCTION
