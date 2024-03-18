@@ -1,39 +1,71 @@
 # K8sLab
 
-A collection of components designed to simplify the provisioning and management of Kubernetes clusters across different environments, including major cloud providers and local setups. It creates a ready-to-use Kubernetes platform bundled with popular open-source tools and example applications.
+A project designed to explore and experiment with a local [Kubernetes](https://kubernetes.io/) cluster
+bundled with popular open-source tools and example applications,
+simulating a real platform.
 
-## Features
+The simulation includes:
 
-- Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters, whether in the cloud with [Amazon EKS](https://aws.amazon.com/eks/) or locally with [KinD](https://kind.sigs.k8s.io/).
-- Infrastructure provisioning with [Terraform](https://www.terraform.io/).
-- Package management with [Helm](https://helm.sh/) for deploying Kubernetes rousources.
-- [Ingress NGINX Controller](https://kubernetes.github.io/ingress-nginx/) for managing incoming traffic to the cluster.
-- Continuous delivery using [Argo CD](https://argoproj.github.io/cd/) for GitOps workflows.
-- Monitoring and alerting with [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/grafana/).
-- [Trivy Operator](https://aquasecurity.github.io/trivy-operator) to continuously scan the Kubernetes cluster for security issues.
-- [Karpenter](https://karpenter.sh/) for automatic node scaling based on resource usage.
-- Continuous integration pipelines using [GitHub Actions](https://github.com/features/actions).
-- [Docker Engine](https://docs.docker.com/engine/) for containerization of applications.
+- [Terraform](https://www.terraform.io/) for resource provisioning
+- [Helm](https://helm.sh/) for package management
+- [Argo CD](https://argoproj.github.io/cd/) for continuous deployment
+- [Ingress-Nginx Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
+- [Prometheus](https://prometheus.io/) for metrics and alerts
+- [Grafana](https://grafana.com/grafana/) for dashboard visualization
+- [Grafana Loki](https://grafana.com/oss/loki/) for log aggregation
+- [Trivy Operator](https://aquasecurity.github.io/trivy-operator) for continuous security scan
 
-## Installing CLI tools
+Run the simulation by following these steps:
 
-Using the `asdf` version manager to install the CLI tools defined in the [.tool-versions](./.tool-versions) file.
+1. CLI Tools Installation
+2. Cluster Provisioning
+3. RBAC and Namespace Configuration
+4. Cluster Tools Installation
+5. Application Deployment
+6. Cleanup and Tear Down
+
+To execute these steps automatically, use the [`run.sh`](./run.sh) script:
+
+- `./run.sh up`
+- `./run.sh down`
+
+## 1. CLI Tools Installation
+
+This step involves installing the necessary command-line interface (CLI) tools required for managing and interacting with your local Kubernetes environment.
+
+CLI tools:
+
+- `terraform`
+- `kubectl`
+- `helm`
+- `argocd`
+
+The required versions of these tools are defined in the [`.tool-versions`](./.tool-versions) file.
+
+You can use the [asdf](https://asdf-vm.com/) version manager to install these tools:
 
 ```bash
-while IFS= read -r toolVersion; do
-  asdf plugin add $(echo $toolVersion | awk '{print $1}')
-  asdf install $toolVersion
-done < .tool-versions
+# Add asdf plugins
+asdf plugin add terraform
+asdf plugin add kubectl
+asdf plugin add helm
+asdf plugin add argocd
+
+# Install tools defined in .tool-versions file
+asdf install
 ```
 
-## Provisioning local cluster (~2 minutes)
+## 2. Cluster Provisioning
 
-Provisioning a KinD (Kubernetes-in-Docker) cluster in your local environment.
+This step involves creating the Kubernetes cluster itself.
 
-You could use the `kind` CLI tool to create the cluster,
+We'll create a [KinD](https://kind.sigs.k8s.io/) (Kubernetes-in-Docker) cluster,
+which is a local Kubernetes cluster that uses Docker containers as cluster nodes.
+
+We could use the `kind` CLI tool to create the cluster,
 but we will use `terraform` to make it more like a real environment.
 
-The local cluster Terraform configuration is defined in the [local-cluster](./local-cluster) directory.
+The local cluster Terraform configuration is defined in the [`local-cluster`](./local-cluster) directory.
 
 ```bash
 terraform -chdir=local-cluster init
@@ -42,7 +74,12 @@ TF_LOG="INFO" \
 terraform -chdir=local-cluster apply -auto-approve
 ```
 
-## Retrieving cluster credentials
+## 3. RBAC and Namespace Configuration
+
+This step involves configuring Role-Based Access Control (RBAC) resources,
+as well as setting namespace limit ranges and resource quotas.
+
+### Retrieving cluster credentials
 
 The directory `/etc/kubernetes/pki/` of a control-plane node typically contains the Public Key Infrastructure (PKI) assets used by the Kubernetes control-plane components for secure communication and authentication within the cluster.
 
@@ -57,7 +94,7 @@ docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt cluster-ca.crt
 terraform -chdir=local-cluster output -raw endpoint > cluster-endpoint.txt
 ```
 
-## Setting cluster entry in kubeconfig
+### Setting cluster entry in kubeconfig
 
 KinD automatically sets up a kubeconfig to access the cluster, but we won't use it.
 Instead, we will set up the kubeconfig from scratch.
@@ -70,7 +107,7 @@ kubectl config set-cluster k8slab \
 --embed-certs=true
 ```
 
-## Retrieving root user credentials
+### Retrieving root user credentials
 
 ```bash
 # Retrieving root user key
@@ -80,7 +117,7 @@ terraform -chdir=local-cluster output -raw root_user_key > root.key
 terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-## Setting root user in kubeconfig
+### Setting root user in kubeconfig
 
 ```bash
 # Setting user entry in kubeconfig
@@ -90,7 +127,7 @@ kubectl config set-credentials k8slab-root --client-key=root.key --client-certif
 kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
 ```
 
-## Grating cluster operators access
+### Grating cluster operators access
 
 Cluster operators are cluster-level users and service accounts that will be given cluster roles.
 
@@ -110,7 +147,7 @@ echo "$list" | grep -q "^$release$" \
 || helm $cluster_root_user_credentials_helm install $release --values $values $chart -n $namespace --create-namespace
 ```
 
-## Retrieving cluster-level service account tokens
+### Retrieving cluster-level service account tokens
 
 In a real environment, these tokens would typically be incorporated into CI/CD secrets.
 However, for the purposes of this simulation, let's store them in files instead.
@@ -131,7 +168,7 @@ get secret cluster-tools-installer --namespace cluster-tools-installer \
 -o jsonpath='{.data.token}' | base64 --decode > cluster-tools-installer.token
 ```
 
-## Applying namespace-configs
+### Applying namespace-configs
 
 Configuring namespaces, as well as their:
 - service accounts,
@@ -159,7 +196,7 @@ echo "$list" | grep -q "^$release$" \
 || helm $namespace_manager_credentials_helm install $release --values $values $chart -n $namespace --create-namespace
 ```
 
-## Retrieving namespace-level service account tokens
+### Retrieving namespace-level service account tokens
 
 ```bash
 namespace_manager_credentials_kubectl="
@@ -174,7 +211,7 @@ get secret application-deployer -n argocd \
 -o jsonpath='{.data.token}' | base64 --decode > argocd-application-deployer.token
 ```
 
-## Granting user credentials
+### Granting user credentials
 
 To facilitate your interaction with the cluster using the `kubectl` CLI,
 we will create dummy user credentials and set up them in kubeconfig.
@@ -210,10 +247,10 @@ kubectl config set-context k8slab-johndev --cluster=k8slab --user=k8slab-johndev
 kubectl config set-context k8slab-janeops --cluster=k8slab --user=k8slab-janeops
 ```
 
-## Cluster tools
+## 4. Cluster Tools Installation
 
-Cluster tools is a collection of Helm charts that extend the functionality of the Kubernetes cluster,
-improving deployments, security, networking, monitoring, etc.,
+This step involves installing various Helm charts that extend the functionality of the Kubernetes cluster,
+improving security, networking, monitoring, deployment process, etc.,
 by adding tools such as Argo CD, Prometheus, Grafana, Loki, Promtail, Trivy Operator, Ingress NGINX Controller, and more.
 
 These tools can be installed in 3 ways:
@@ -222,20 +259,17 @@ These tools can be installed in 3 ways:
 - Using Terraform
 - Using Argo CD (in this case, Argo CD must be installed first with Helm or Terraform)
 
-Let's use Helm!
+Let's use Terraform!
 
-##
+Before proceeding with the installation,
+execute each of the following commands in a new tab in your terminal to watch the pods start up:
 
-We'll use Terraform to install Argo CD and then use Argo CD to install the other tools.
+- `watch -n 1 kubectl get pods --namespace ingress`
+- `watch -n 1 kubectl get pods --namespace monitoring`
+- `watch -n 1 kubectl get pods --namespace trivy`
+- `watch -n 1 kubectl get pods --namespace argocd`
 
-### Installing Argo CD with Terraform (~5 minutes)
-
-We'll use the Terraform `-target` option to limit the operation to only the `helm_release.argocd_stack` resource and its dependencies.
-As argocd-stack depends on networking-stack, the networking-stack will also be installed.
-
-As the `-target` option is for exceptional use only,
-Terraform will warn "Resource targeting is in effect" and "Applied changes may be incomplete",
-but for the purposes of this simulation you can ignore these messages.
+### Installing cluster tools with Terraform
 
 ```bash
 cluster_tools_installer_credentials_terraform="
@@ -250,8 +284,7 @@ TF_LOG=INFO \
 terraform -chdir=cluster-tools \
 apply $cluster_tools_installer_credentials_terraform \
 -auto-approve \
--parallelism=1 \
--target=helm_release.argocd_stack
+-parallelism=1
 ```
 
 ### Retrieving Argo CD admin password
@@ -369,23 +402,36 @@ get secret monitoring-stack-grafana -n monitoring \
 
 <!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
 
-## Applications
+## 5. Application Deployment
+
+This step involves deploying example applications onto the Kubernetes cluster.
+
+We'll deploy two applications:
+
+- `Hello World` - a simple web application that will be deployed in multiple environments (development, staging, and production)
+- `CRUDify` - a microservices-based CRUD application to explore with the cluster features (ingress routing, logging, metrics, etc)
+
+The source-code of the applications reside in the [apps](./apps/) directory.
+
+GitHub Actions workflows are configured to test, build and push the Docker images of the applications to Docker Hub.
+
+The deployment configuration of the applications reside in the [deployable-apps](./deployable-apps/) directory.
+
+Argo CD watches the deployment configurations to deploy and synchronize changes onto the cluster.
 
 ### Hello World
 
 The Hello World application is a simple web application that displays a greeting message.
+
 The default greeting message is `Hello, World!`,
 but it can be configured to display a different message.
 
-We'll use the Argo-CD application-set resource to generate 3 Hello World applications,
-one for each environment (development, staging, production).
+We'll use the Argo CD ApplicationSet resource to generate 3 Hello World applications,
+one for each environment (development, staging, and production).
 
 Each application is configured to display a unique message,
 accessible via a distinct URL,
 and deployed with a different number of replicas.
-
-In a real setup each environment could have a dedicated cluster,
-but in this simulation they are isolated by namespace.
 
 Applications:
 
@@ -399,9 +445,6 @@ Each application contains the following resources:
 - 1 service
 - 1 ingress with configurable host and path
 - 1 config-map to configure the greeting message
-
-TODO
-- Use Kustomize instead of Helm for the deployable app
 
 #### Applying Hello World application-set
 
@@ -600,7 +643,7 @@ http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
 
 Fetching all items:
 
-- http://crud.localhost/item-reader/api/items/.*
+- [http://crud.localhost/item-reader/api/items/.*](http://crud.localhost/item-reader/api/items/.*)
 
 #### Dashboards
 
@@ -650,9 +693,12 @@ Other examples:
 - Items failed to create due to server error: `sum(crudify_http_requests_total{method="POST", status="500"})`
 - Successful requests by method: `sum by (method) (crudify_http_requests_total{status="200"})`
 
-<!-- ----------------------------------------------------------------------- -->
 <!-- FUNCTION drop -->
-## Drop
+## 6. Cleanup and Tear Down
+
+This step involves dismantling and removing all components and configurations associated with the Kubernetes cluster.
+It includes undeploying applications, uninstalling cluster-wide tools, and removing RBAC and namespace configurations.
+Finally, the Kubernetes cluster itself is destroyed.
 
 ### Undeploying applications
 
@@ -672,19 +718,14 @@ delete \
 ### Uninstalling cluster tools
 
 ```bash
-# Uninstalling cluster tools that were installed with argocd
-kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
-delete \
--n argocd \
--f argocd/toolkit-applications/ \
--l selection=toolkit-applications
+cluster_tools_installer_credentials_terraform="
+  -var cluster_endpoint=$(cat cluster-endpoint.txt)
+  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
+  -var service_account_token=$(realpath cluster-tools-installer.token)
+"
 
-# Uninstalling argocd stack and its dependencies
 terraform -chdir=cluster-tools \
-destroy \
--var cluster_ca_certificate=../cluster-ca.crt \
--var service_account_token=../cluster-tools-installer.token \
--var cluster_endpoint=$(cat cluster-endpoint.txt) \
+destroy $cluster_tools_installer_credentials_terraform \
 -auto-approve
 ```
 
@@ -704,9 +745,8 @@ kubectl --context k8slab-root delete -f rbac/ -l selection=rbac
 terraform -chdir=local-cluster destroy -auto-approve
 ```
 
-<!-- ----------------------------------------------------------------------- -->
 <!-- FUNCTION nuke -->
-## Nuke
+### Nuke
 
 ```bash
 # Stopping and removing Docker containers used as cluster nodes
@@ -720,99 +760,3 @@ done
 (cd cluster-tools; git clean -Xfd)
 git clean -Xf
 ```
-
-<!-- ----------------------------------------------------------------------- -->
-## Ref
-
-PromQL (Prometheus Query Language) examples:
-- https://prometheus.io/docs/prometheus/latest/querying/examples/
-
-## TODO
-
-### Tracing
-
-OpenTelemetry
-- https://opentelemetry.io/
-
-Jaeger
-- https://www.jaegertracing.io/
-
-### Grafana showing "too many outstanding requests" error while querying Loki datasource
-
-- https://stackoverflow.com/questions/74568197/grafana-showing-too-many-outstanding-requests-error-while-querying-loki-dashbo
-- https://github.com/grafana/loki/issues/5123
-- https://community.grafana.com/t/too-many-outstanding-requests-on-loki-2-7-1/78249/8
-
-### How to return from xdg-open within a shell script
-
-- https://unix.stackexchange.com/questions/74605/use-xdg-open-to-open-a-url-with-a-new-process
-- https://askubuntu.com/questions/1345259/how-to-return-from-xdg-open-within-a-shell-script
-
-### Prometheus data storage, retention, etc
-
-### Protect Prometheus endpoint? Teleport?
-
-### Trivy Operator Dashboard in Grafana
-
-https://aquasecurity.github.io/trivy-operator/v0.11.0/tutorials/grafana-dashboard/
-
-### Why these Prometheus targets are unhealthy?
-
-- serviceMonitor/monitoring/monitoring-stack-kube-prom-kube-controller-manager/0 (0/1 up)
-- serviceMonitor/monitoring/monitoring-stack-kube-prom-kube-etcd/0 (0/1 up)
-- serviceMonitor/monitoring/monitoring-stack-kube-prom-kube-proxy/0 (0/3 up)
-- serviceMonitor/monitoring/monitoring-stack-kube-prom-kube-scheduler/0 (0/1 up)
-
-### CRUDify metrics
-
-Gauge crudify_items_total
-- crudify_items_total
-
-Counter crudify_http_requests_total (`method` (POST, GET, PUT, DELETE), `status` (200, 400, 500))
-- crudify_http_requests_created
-- crudify_http_requests_total
-
-Summary crudify_http_request_duration_seconds (`method` (POST, GET, PUT, DELETE), `status` (200, 400, 500))
-- crudify_http_request_duration_seconds_created
-- crudify_http_request_duration_seconds_count
-- crudify_http_request_duration_seconds_sum
-
-Summary crudify_database_latency_seconds (`operation` (create_one_item, read_many_items, update_many_items, delete_many_items))
-- crudify_database_latency_seconds_created
-- crudify_database_latency_seconds_count
-- crudify_database_latency_seconds_sum
-
-### CRUDify queues
-
-Replace the `item-updater` and `item-deleter` services by the following components:
-
-- `item-updater-dispatcher`: A service that listens for client requests to update items and dispatches individual requests to the __item update queue__.
-- `item-updater-worker`: A service that consumes the item update queue via __message queue subscription__ and updates each item in the database.
-- `item-deleter-dispatcher`: A service that listens for client requests to delete items and dispatches individual requests to the __item deletion queue__.
-- `item-deleter-worker`: A cron-job that consumes the item deletion queue via __pooling__ and deletes each item from the database.
-
-### CRUDify database
-
-NFS Volume
-https://github.com/badtuxx/DescomplicandoKubernetes/tree/main/pt/day-6
-
-Prometheus MongoDB Exporter
-https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-mongodb-exporter
-
-MongoDB Community Kubernetes Operator
-https://github.com/mongodb/mongodb-kubernetes-operator
-
-### CRUDify authentication and authorization
-
-### CRUDify client metrics
-
-For cron jobs, exposing metrics via an endpoint isn't feasible due to their short-lived nature.
-Explore alternative monitoring strategies to ensure comprehensive metric collection.
-
-### CRUDify Alerts
-
-PrometheusRule?
-
-### CRUDify Horizontal Pod Autoscaler
-
-HPA
