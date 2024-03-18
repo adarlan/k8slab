@@ -1,5 +1,13 @@
 # TODO
 
+create Pod crudify-mongodb-0 in StatefulSet crudify-mongodb failed error: pods "crudify-mongodb-0" is forbidden: exceeded quota: crudify, requested: limits.cpu=500m,requests.memory=512Mi, used: limits.cpu=1500m,requests.memory=384Mi, limited: limits.cpu=1500m,requests.memory=512Mi
+
+## rbac
+
+the app deployer does not need permission to delete app and appset resources,
+because its responsibility is just deploying.
+deleting is responsibility of argocd operators (Peter Argoman?)
+
 ## Features
 
 - Automated provisioning of [Kubernetes](https://kubernetes.io/) clusters, whether in the cloud with [Amazon EKS](https://aws.amazon.com/eks/) or locally with [KinD](https://kind.sigs.k8s.io/).

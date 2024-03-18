@@ -1,13 +1,14 @@
 # K8sLab
 
-A project designed to explore and experiment with a local [Kubernetes](https://kubernetes.io/) cluster
+A project intended for exploring and piloting a local [Kubernetes](https://kubernetes.io/) cluster
 bundled with popular open-source tools and example applications,
-simulating a real platform.
+simulating a real environment.
 
-The simulation includes:
+This simulation includes:
 
 - [Terraform](https://www.terraform.io/) for resource provisioning
 - [Helm](https://helm.sh/) for package management
+- [Kustomize](https://kustomize.io/) for deployment configuration
 - [Argo CD](https://argoproj.github.io/cd/) for continuous deployment
 - [Ingress-Nginx Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
 - [Prometheus](https://prometheus.io/) for metrics and alerts
@@ -19,8 +20,8 @@ Run the simulation by following these steps:
 
 1. CLI Tools Installation
 2. Cluster Provisioning
-3. Cluster Operators Authorization
-4. Namespace Configurations
+3. Cluster-Level RBAC
+4. Namespace-Level RBAC & Resource Management
 5. Cluster Tools Installation
 6. Application Deployments
 7. Cleanup and Tear Down
@@ -54,8 +55,8 @@ asdf plugin add kubectl
 asdf plugin add helm
 asdf plugin add argocd
 
-# Install tools defined in .tool-versions file
-asdf install
+# Install tools defined in .tool-versions
+while IFS= read -r tool_version; do asdf install $tool_version; done < .tool-versions
 ```
 
 ## 2. Cluster Provisioning
@@ -68,7 +69,7 @@ which is a local Kubernetes cluster that uses Docker containers as cluster nodes
 We could use the `kind` CLI tool to create the cluster,
 but we will use `terraform` to make it more like a real environment.
 
-The local cluster Terraform configuration is defined in the [`local-cluster`](./local-cluster) directory.
+The Terraform configuration is defined in the [`local-cluster`](./local-cluster) directory.
 
 ```bash
 terraform -chdir=local-cluster init
@@ -100,17 +101,24 @@ terraform -chdir=local-cluster output -raw root_user_key > root.key
 terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-## 3. Cluster Operators Authorization
+## 3. Cluster-Level RBAC
 
 This step involves granting cluster operators access.
 
 Cluster operators are cluster-wide users and service accounts that will be given cluster roles.
 
+By default, this action will create:
+- the `namespace-manager` service account,
+- the `cluster-tools-installer` service account,
+- and the `cluster-administrator` cluster role along with a `Jane Ops` user cluster role binding.
+
+You can change this configuration by editing the [`cluster-operators/values.yaml`](./cluster-operators/values.yaml) file.
+
 This is the only action that requires the root user credentials.
 After this, we'll have less-privileged users and service accounts to operate the cluster.
 
 ```bash
-cluster_root_user_credentials_terraform="
+root_user_credentials="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
   -var root_user_key=$(realpath root.key)
@@ -121,13 +129,13 @@ terraform -chdir=cluster-operators init
 
 TF_LOG=INFO \
 terraform -chdir=cluster-operators \
-apply $cluster_root_user_credentials_terraform \
+apply $root_user_credentials \
 -auto-approve
 ```
 
 ### Retrieving namespace manager token
 
-Namespace manager is a cluster-wide service account responsible for managing namespace configurations.
+Namespace manager is a cluster-wide service account responsible for managing namespace-level configurations.
 
 ```bash
 terraform -chdir=cluster-operators output -raw namespace_manager_token > namespace-manager.token
@@ -135,7 +143,7 @@ terraform -chdir=cluster-operators output -raw namespace_manager_token > namespa
 
 ### Retrieving cluster tools installer token
 
-Cluster tools installer is a cluster-wide service account responsible for installing the cluster tools.
+Cluster tools installer is a cluster-wide service account responsible for installing tools that extend the cluster's functionality.
 
 ```bash
 terraform -chdir=cluster-operators output -raw cluster_tools_installer_token > cluster-tools-installer.token
@@ -152,7 +160,7 @@ To use her credentials,
 simply run `kubectl config use-context janeops` before your `kubectl` commands
 or add the `--context janeops` option to each `kubectl` command.
 
-<!-- IFNOT kubectl --context janeops whoami -->
+<!-- IFNOT kubectl --context janeops auth whoami -->
 ```bash
 # Generating private key
 openssl genrsa -out janeops.key 2048
@@ -173,21 +181,24 @@ kubectl config set-credentials janeops --client-key=janeops.key --client-certifi
 kubectl config set-context janeops --cluster=k8slab --user=janeops
 ```
 
-## 4. Namespace Configurations
+## 4. Namespace-Level RBAC & Resource Management
 
-This step involves configuring all the namespaces,
-as well as their:
-- service accounts,
-- service account secrets,
-- roles,
-- user and service account role bindings,
-- resource quotas,
-- and limit ranges.
+This step involves configuring namespaces along with their resource quotas, and limit ranges,
+and granting namespace-level access for users and service accounts.
+
+By default, this action will create:
+- the `argocd`, `ingress`, `monitoring`, and `trivy` namespaces for the cluster tools,
+- the `application-deployer` service account in the `argocd` namespace,
+- the `development`, `staging`, and `production` namespaces for the applications,
+- the `developer` role along with a `John Dev` user role binding in the `development` namespace,
+- and resource quotas and limit ranges for all these namespaces.
+
+You can change this configuration by editing the [`namespace-configs/values.yaml`](./namespace-configs/values.yaml) file.
 
 This action requires the namespace manager credentials.
 
 ```bash
-namespace_manager_credentials_terraform="
+namespace_manager_credentials="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
   -var namespace_manager_token=$(realpath namespace-manager.token)
@@ -197,7 +208,7 @@ terraform -chdir=namespace-configs init
 
 TF_LOG=INFO \
 terraform -chdir=namespace-configs \
-apply $namespace_manager_credentials_terraform \
+apply $namespace_manager_credentials \
 -auto-approve
 ```
 
@@ -212,7 +223,7 @@ terraform -chdir=namespace-configs output -raw argocd_application_deployer_token
 ### Signing John Dev certificate
 
 John Dev is a namespace-level user responsible for developing applications,
-authorized to manage resources deployed in the `development` namespace.
+authorized to manage application resources in the `development` namespace.
 
 To facilitate your interaction with these resources using the `kubectl` CLI tool,
 we will create John Dev's credentials and set up them in your kubeconfig.
@@ -221,7 +232,7 @@ To use his credentials,
 simply run `kubectl config use-context johndev` before your `kubectl` commands
 or add the `--context johndev` option to each `kubectl` command.
 
-<!-- IFNOT kubectl --context johndev whoami -->
+<!-- IFNOT kubectl --context johndev auth whoami -->
 ```bash
 # Generating private key
 openssl genrsa -out johndev.key 2048
@@ -242,13 +253,22 @@ kubectl config set-context johndev --cluster=k8slab --user=johndev
 ## 5. Cluster Tools Installation
 
 This step involves installing various Helm charts that extend the functionality of the Kubernetes cluster,
-improving security, networking, monitoring, deployment process, etc.,
-by adding tools such as Argo CD, Prometheus, Grafana, Loki, Promtail, Trivy Operator, Ingress NGINX Controller, and more.
+improving deployment, networking, monitoring, security, etc.,
+by adding tools such as:
+- Argo CD,
+- Ingress-Nginx Controller,
+- Prometheus,
+- Grafana,
+- Grafana Loki,
+- Trivy Operator,
+- and more.
+
+The configuration is defined in the [`cluster-tools`](./cluster-tools) directory.
 
 This action requires the cluster tools installer credentials.
 
 ```bash
-cluster_tools_installer_credentials_terraform="
+cluster_tools_installer_credentials="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
   -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
@@ -256,36 +276,36 @@ cluster_tools_installer_credentials_terraform="
 
 name=loki
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
 
 name=promtail
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
 
 name=ingress-nginx
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
 
 name=kube-prometheus-stack
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
 
 name=argo-cd
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
 
 name=trivy-operator
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials_terraform -auto-approve
+TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
 ```
 
 During the installation,
 you can execute each of the following commands in a new tab in your terminal to watch the pods start up:
 
+- `watch -n 1 kubectl --context janeops get pods --namespace argocd`
 - `watch -n 1 kubectl --context janeops get pods --namespace ingress`
 - `watch -n 1 kubectl --context janeops get pods --namespace monitoring`
 - `watch -n 1 kubectl --context janeops get pods --namespace trivy`
-- `watch -n 1 kubectl --context janeops get pods --namespace argocd`
 
 ### Retrieving Argo CD admin password
 
@@ -317,6 +337,7 @@ argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials
 - The password is stored in the `argocd-admin.password` file
 
 <!-- COMMAND nohup xdg-open http://argocd.localhost > /dev/null 2>&1 -->
+<!-- COMMAND echo argocd-admin.password -->
 
 ### Accessing Prometheus in your browser
 
@@ -331,8 +352,7 @@ argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials
 - The password is stored in the `grafana-admin.password` file
 
 <!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
-
-<!-- FUNCTION dont -->
+<!-- COMMAND echo grafana-admin.password -->
 
 ## 6. Application Deployments
 
@@ -343,11 +363,11 @@ We'll deploy two applications:
 - `Hello World` - a simple web application that will be deployed in multiple environments (development, staging, and production)
 - `CRUDify` - a microservices-based CRUD application to explore with the cluster features (ingress routing, logging, metrics, etc)
 
-The source-code of the applications reside in the [apps](./apps/) directory.
+The source-code of the applications reside in the [`apps`](./apps/) directory.
 
 GitHub Actions workflows are configured to test, build and push the Docker images of the applications to Docker Hub.
 
-The deployment configuration of the applications reside in the [deployable-apps](./deployable-apps/) directory.
+The deployment configuration of the applications reside in the [`deployable-apps`](./deployable-apps/) directory.
 
 Argo CD watches the deployment configurations to deploy and synchronize changes onto the cluster.
 
@@ -358,42 +378,61 @@ The Hello World application is a simple web application that displays a greeting
 The default greeting message is `Hello, World!`,
 but it can be configured to display a different message.
 
-We'll use the Argo CD ApplicationSet resource to generate 3 Hello World applications,
+The application is composed by the following resources:
+
+- 1 `Deployment` with configurable number of replicas
+- 1 `Service` targeting the deployment pods
+- 1 `Ingress` with configurable host and path targeting the service
+- 1 `ConfigMap` to configure the greeting message
+
+#### Deploying Hello World
+
+We'll use the Argo CD `ApplicationSet` resource to generate 3 Hello World applications,
 one for each environment (development, staging, and production).
 
 Each application is configured to display a unique message,
 accessible via a distinct URL,
 and deployed with a different number of replicas.
 
-Applications:
+| Application   | Namespace     | Replicas | URL                          | Message            |
+| ------------- | ------------- | -------- | ---------------------------- | ------------------ |
+| `hello-dev`   | `development` | `2`      | `http://dev.localhost/hello` | `Hello, Devs!`     |
+| `hello-qa`    | `staging`     | `4`      | `http://stg.localhost/hello` | `Hello, QA Folks!` |
+| `hello-world` | `production`  | `8`      | `http://hello.localhost`     | `Hello, World!`    |
 
-- `hello-world-dev` - deployed with `2` replicas in the `development` namespace, displays `Hello, Devs!` at `http://dev.localhost/hello`
-- `hello-world-stg` - deployed with `4` replicas in the `staging` namespace, displays `Hello, QA Folks!` at `http://stg.localhost/hello`
-- `hello-world-prd` - deployed with `8` replicas in the `production` namespace, displays `Hello, Users!` at `http://hello.localhost`
+You can change this configuration by editing the
+[`deployable-apps/hello-world/argocd-application-set.yaml`](./deployable-apps/hello-world/argocd-application-set.yaml)
+file.
 
-Each application contains the following resources:
-
-- 1 deployment with configurable number of replicas
-- 1 service
-- 1 ingress with configurable host and path
-- 1 config-map to configure the greeting message
-
-#### Applying Hello World application-set
+This action requires the Argo CD application deployer credentials.
 
 ```bash
-kubectl --token=$(cat argocd-application-deployer.token) --server=$(cat cluster-endpoint.txt) \
-apply -n argocd -f argocd/application-sets/ \
---prune -l selection=application-sets \
---prune-allowlist=argoproj.io/v1alpha1/ApplicationSet
+argocd_application_deployer_credentials="
+  --server=$(cat cluster-endpoint.txt)
+  --certificate-authority=$(realpath cluster-ca.crt)
+  --token=$(cat argocd-application-deployer.token)
+"
+
+kubectl $argocd_application_deployer_credentials \
+apply \
+--namespace argocd \
+--filename deployable-apps/hello-world/argocd-application-set.yaml
 ```
 
-#### Waiting for Hello World applications synchronization
+#### Waiting Hello World synchronization
 
 ```bash
-argocd app wait -l selection=application-sets
+argocd app wait hello-world-dev
+argocd app wait hello-world-stg
+argocd app wait hello-world-prd
 ```
 
-#### Waiting for Hello World applications health
+#### Waiting Hello World health
+
+The Hello World application exposes a `/healthz` endpoint,
+which serves as a health check interface.
+
+We'll await the return of a `200` HTTP status code from this endpoint.
 
 ```bash
 urls="
@@ -402,20 +441,21 @@ http://stg.localhost/hello/healthz
 http://hello.localhost/healthz
 "
 max_retries=3
-retry_interval=10
+retry_interval_seconds=10
 for url in $urls; do
   retries=0
   until [ "$(curl -s -o /dev/null -w '%{http_code}' $url)" = "200" ]; do
     ((++retries));
     if [ $retries -ge $max_retries ]; then exit 1
-    else sleep $retry_interval; fi
+    else sleep $retry_interval_seconds; fi
   done
 done
 ```
 
-#### Interacting with Hello World applications
+#### Interacting with Hello World
 
 Open in your browser:
+
 - http://dev.localhost/hello
 - http://stg.localhost/hello/
 - http://hello.localhost
@@ -431,49 +471,48 @@ curl http://hello.localhost
 ### CRUDify
 
 CRUDify is a CRUD (Create, Read, Update, Delete) application written in Python.
-Unlike a monolithic application, CRUDify is designed to explore with a microservices architecture,
-being composed of distinct components, including multiple services and clients.
 
-CRUDify manages `items`, each consisting of a `name` provided by the client and an `id` assigned by the API.
+CRUDify manages `items`.
 
-```json
-// Item schema
-{
-  "id": "string",
-  "name": "string"
-}
-```
+An item consists of
+a `name`, provided by the client,
+and an `id`, assigned by the API.
 
-Items are uniquely identified by their `id` and validated based on the `name`, which must match the pattern `^[a-zA-Z]{5,30}$`.
+The API exposes four endpoints, allowing clients to `create`, `read`, `update`, and `delete` items.
 
-CRUDify's API is composed by four services:
+Items are uniquely identified by their `id`.
 
-- `item-creator`: A service that listens for client requests to create new items in the database.
-- `item-reader`: A service that listens for client requests to fetch items from the database.
-- `item-updater`: A service that listens for client requests to update items in the database.
-- `item-deleter`: A service that listens for client requests to delete items from the database.
+Creating or updating items is subject to `name` validation,
+which must match the pattern `^[a-zA-Z]{5,30}$`.
+
+Unlike a monolithic application,
+CRUDify is designed to explore with a microservices architecture,
+being composed of multiple resources:
+
+- 4 `services` for the API
+- 4 `deployments` - one deployment for each API service
+- 1 `ingress` with 4 paths - one path for each API service
+- 1 `statefulset`, 1 `service`, and 1 `secret` for MongoDB to store the items
+- 4 `cronjobs` to simulate the clients - one client for each API service
+- 4 `servicemonitors` for Prometheus scraping - one service monitor for each API service
+- 1 `config-map` for Grafana dashboards
+
+API services:
+
+- `item-creator`: Listens for client requests to `create` new items.
+- `item-reader`: Listens for client requests to `read` items.
+- `item-updater`: Listens for client requests to `update` items.
+- `item-deleter`: Listens for client requests to `delete` items.
+
+The API will be accessible at `http://crud.localhost/api`.
+
+An ingress resource is configured to ensure that incoming traffic directed to `http://crud.localhost/api/<service>` is routed to the corresponding service.
 
 The services receive a client request via ingress routing,
 perform the requested operation in the database,
 generate relevant information in the logs,
 update the application metrics,
 and return a response to the client.
-
-The API will be accessible at `http://crud.localhost`.
-An ingress resource is configured to ensure that incoming traffic directed to `http://crud.localhost/<service-name>` is routed to the corresponding service.
-
-Clients interact with CRUDify's API via HTTP requests:
-
-| Method | URL | Data | Description |
-| ------ | --- | ---- | ----------- |
-| `POST`   | `http://crud.localhost/item-creator/api/items`         | `{ name: string }` | Creates a new item |
-| `GET`    | `http://crud.localhost/item-reader/api/items/<query>`  |                    | Retrieves items matching the query |
-| `PUT`    | `http://crud.localhost/item-updater/api/items/<query>` | `{ name: string }` | Updates items matching the query |
-| `DELETE` | `http://crud.localhost/item-deleter/api/items/<query>` |                    | Deletes items matching the query |
-
-The `<query>` parameter is a regex used to filter items by name.
-For example, `GET http://crud.localhost/item-reader/api/items/.*` retrieves all items.
-The query must be URL-encoded to fit the request path.
 
 Four client applications simulate real users:
 
@@ -487,46 +526,41 @@ In each execution, they perform a random number of iterations.
 For each iteration, they call the CRUDify API with random queries and data.
 Some random-generated data may fail validation, leading to expected bad request errors.
 
-CRUDify uses MongoDB to store the items.
-The configuration includes a stateful-set for the MongoDB container.
+#### Deploying CRUDify
 
-CRUDify logs are directed to stdout and transiently stored in files on the cluster nodes.
-These logs are then collected by Promtail agents and forwarded to the Loki server,
-enabling easy visualization of logs through Grafana dashboards.
+We'll use the Argo CD `Application` resource.
 
-CRUDify services provide Prometheus metrics for monitoring and performance analysis.
-Each service is equipped with its own service monitor,
-instructing the Prometheus operator on the targets to scrape for metrics.
-The metrics collected from these services can be visualized within Grafana dashboards.
-
-Deploying this application will create the following resources in the cluster:
-
-- 4 services for the API
-- 4 deployments (one for each API service)
-- 1 stateful-set, 1 service, and 1 secret for MongoDB
-- 1 ingress for crud.localhost with 4 paths (one path for each API service)
-- 4 cron-jobs to run the clients (one client for each API service)
-- 4 service monitors (one for each API service)
-- 1 config map for Grafana dashboard
-
-TODO Use application-set instead of application-template for the argocd apps?
-
-#### Deploying CRUDify application
+This action requires the Argo CD application deployer credentials.
 
 ```bash
-creds="--kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token)"
-helm $creds list --short -n argocd | grep -q '^argocd-apps$' \
-&& helm $creds upgrade argocd-apps -n argocd argocd/application-templates \
-|| helm $creds install argocd-apps -n argocd argocd/application-templates
+argocd_application_deployer_credentials="
+  --server=$(cat cluster-endpoint.txt)
+  --certificate-authority=$(realpath cluster-ca.crt)
+  --token=$(cat argocd-application-deployer.token)
+"
+
+kubectl $argocd_application_deployer_credentials \
+apply \
+--namespace argocd \
+--filename deployable-apps/crudify/argocd-application.yaml
 ```
 
-#### Waiting for CRUDify application synchronization
+#### CRUDify synchronization
+
+- http://argocd.localhost/applications/argocd/crudify?view=tree
 
 ```bash
-argocd app wait -l selection=application-templates
+argocd app wait crudify
 ```
 
-#### Waiting for CRUDify application health
+#### CRUDify health check
+
+Health check:
+
+- http://crud.localhost/item-creator/healthz
+- http://crud.localhost/item-reader/healthz
+- http://crud.localhost/item-updater/healthz
+- http://crud.localhost/item-deleter/healthz
 
 ```bash
 urls="
@@ -536,24 +570,37 @@ http://crud.localhost/item-updater/healthz
 http://crud.localhost/item-deleter/healthz
 "
 max_retries=3
-retry_interval=10
+retry_interval_seconds=10
 for url in $urls; do
   retries=0
   until [ "$(curl -s -o /dev/null -w '%{http_code}' $url)" = "200" ]; do
     ((++retries));
     if [ $retries -ge $max_retries ]; then exit 1
-    else sleep $retry_interval; fi
+    else sleep $retry_interval_seconds; fi
   done
 done
 ```
 
-#### Interacting with CRUDify's API using curl
+#### Interacting with CRUDify's API
+
+Clients interact with CRUDify's API via HTTP requests:
+
+| Method   | URL                                        | Data               | Description |
+| -------- | ------------------------------------------ | ------------------ | ----------- |
+| `POST`   | `http://crud.localhost/api/create`         | `{ name: string }` | Creates a new item |
+| `GET`    | `http://crud.localhost/api/read/<query>`   |                    | Retrieves items matching the query |
+| `PUT`    | `http://crud.localhost/api/update/<query>` | `{ name: string }` | Updates items matching the query |
+| `DELETE` | `http://crud.localhost/api/delete/<query>` |                    | Deletes items matching the query |
+
+The `<query>` parameter is a regex used to filter items by name.
+
+For example,
+[`http://crud.localhost/item-reader/api/items/.*`](http://crud.localhost/item-reader/api/items/.*)
+retrieves all items.
 
 ```bash
 # Create item with name=FooBar
-curl -X POST \
--H "Content-Type: application/json" \
--d '{"name":"FooBar"}' \
+curl -X POST -H "Content-Type: application/json" -d '{"name":"FooBar"}' \
 http://crud.localhost/item-creator/api/items
 
 # Read items with name=FooBar
@@ -561,9 +608,7 @@ curl -X GET \
 http://crud.localhost/item-reader/api/items/%5EFooBar%24
 
 # Update items with name=FooBar to name=BarFoo
-curl -X PUT \
--H "Content-Type: application/json" \
--d '{"name":"BarFoo"}' \
+curl -X PUT -H "Content-Type: application/json" -d '{"name":"BarFoo"}' \
 http://crud.localhost/item-updater/api/items/%5EFooBar%24
 
 # Delete items with name=BarFoo
@@ -571,35 +616,32 @@ curl -X DELETE \
 http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
 ```
 
-#### Fetching items in your browser
+#### CRUDify database
 
-Fetching all items:
+CRUDify uses MongoDB to store the items.
+The configuration includes a stateful-set for the MongoDB container.
 
-- [http://crud.localhost/item-reader/api/items/.*](http://crud.localhost/item-reader/api/items/.*)
+#### CRUDify logs
 
-#### Dashboards
-
-- http://grafana.localhost/d/crudify
-
-#### Logs
+CRUDify logs are directed to stdout and transiently stored in files on the cluster nodes.
+These logs are then collected by Promtail agents and forwarded to the Loki server,
+enabling easy visualization of logs through Grafana dashboards.
 
 Logs for the last 30 minutes in the 'crudify' namespace:
+
 - Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `crudify` >> Select range: `Last 30 minutes` >> Run query
 - http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22crudify%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
 
-#### Status
+#### CRUDify metrics
 
-Health check:
-- http://crud.localhost/item-creator/healthz
-- http://crud.localhost/item-reader/healthz
-- http://crud.localhost/item-updater/healthz
-- http://crud.localhost/item-deleter/healthz
+CRUDify services provide Prometheus metrics for monitoring and performance analysis.
+Each service is equipped with its own service monitor,
+instructing the Prometheus operator on the targets to scrape for metrics.
+The metrics collected from these services can be visualized within Grafana dashboards.
 
 Service monitor targets:
 - Prometheus >> Status >> Targets >> Filter by endpoint or labels: `crudify`
 - http://prometheus.localhost/targets?search=crudify
-
-#### Metrics
 
 Current number of items (gauge):
 - `sum(crudify_items_total)`
@@ -625,43 +667,65 @@ Other examples:
 - Items failed to create due to server error: `sum(crudify_http_requests_total{method="POST", status="500"})`
 - Successful requests by method: `sum by (method) (crudify_http_requests_total{status="200"})`
 
+#### CRUDify dashboards
+
+- http://grafana.localhost/d/crudify
+
 <!-- FUNCTION down -->
 ## 7. Cleanup and Tear Down
 
-This step involves dismantling and removing all components and configurations associated with the Kubernetes cluster.
-It includes undeploying applications, uninstalling cluster tools, and removing RBAC and namespace configurations.
-Finally, the Kubernetes cluster itself is destroyed.
+This step involves deleting all resources in the cluster,
+which includes undeploying applications, uninstalling cluster tools, and removing RBAC and namespace configurations.
+Finally, the cluster itself is destroyed.
 
 ### Undeploying applications
 
 ```bash
-# # crudify
-# helm --kube-apiserver $(cat cluster-endpoint.txt) --kube-token $(cat argocd-application-deployer.token) \
-# uninstall argocd-apps -n argocd
+# Undeploying Hello World
+argocd appset delete hello-world --yes
 
-# # hello-world
-# kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
-# delete \
-# -n argocd \
-# -f argocd/application-sets/ \
-# -l selection=application-sets
+# Undeploying CRUDify
+argocd app delete crudify --yes
 ```
 
 ### Uninstalling cluster tools
 
 ```bash
-cluster_tools_installer_credentials_terraform="
+cluster_tools_installer_credentials="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
   -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
 "
 
-terraform -chdir=cluster-tools/trivy-operator destroy $cluster_tools_installer_credentials_terraform -auto-approve
-terraform -chdir=cluster-tools/argo-cd destroy $cluster_tools_installer_credentials_terraform -auto-approve
-terraform -chdir=cluster-tools/kube-prometheus-stack destroy $cluster_tools_installer_credentials_terraform -auto-approve
-terraform -chdir=cluster-tools/ingress-nginx destroy $cluster_tools_installer_credentials_terraform -auto-approve
-terraform -chdir=cluster-tools/promtail destroy $cluster_tools_installer_credentials_terraform -auto-approve
-terraform -chdir=cluster-tools/loki destroy $cluster_tools_installer_credentials_terraform -auto-approve
+terraform -chdir=cluster-tools/trivy-operator destroy $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/argo-cd destroy $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/kube-prometheus-stack destroy $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/ingress-nginx destroy $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/promtail destroy $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/loki destroy $cluster_tools_installer_credentials -auto-approve
+```
+
+### Removing RBAC and namespace configurations
+
+```bash
+# TODO revoke user certificates?
+
+# Removing namespace-level configurations
+namespace_manager_credentials="
+  -var cluster_endpoint=$(cat cluster-endpoint.txt)
+  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
+  -var namespace_manager_token=$(realpath namespace-manager.token)
+"
+terraform -chdir=namespace-configs destroy $namespace_manager_credentials -auto-approve
+
+# Removing cluster-level RBAC resources
+root_user_credentials="
+  -var cluster_endpoint=$(cat cluster-endpoint.txt)
+  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
+  -var root_user_key=$(realpath root.key)
+  -var root_user_certificate=$(realpath root.crt)
+"
+terraform -chdir=cluster-operators destroy $root_user_credentials -auto-approve
 ```
 
 ### Destroying cluster
@@ -670,7 +734,12 @@ terraform -chdir=cluster-tools/loki destroy $cluster_tools_installer_credentials
 terraform -chdir=local-cluster destroy -auto-approve
 ```
 
-### Stopping and removing Docker containers used as cluster nodes
+### Forcibly destroying cluster
+
+If for some reason previous cleanup actions failed,
+or if you lost a Terraform state,
+or even if you want a quick teardown,
+this script ensures that all Docker containers used as cluster nodes are stopped and deleted.
 
 ```bash
 docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_name; do
@@ -682,9 +751,10 @@ done
 ### Removing gitignored files
 
 ```bash
-(cd cluster-tools; git clean -Xfd)
+(cd cluster-tools;     git clean -Xfd)
 (cd namespace-configs; git clean -Xfd)
 (cd cluster-operators; git clean -Xfd)
-(cd local-cluster; git clean -Xfd)
-(git clean -Xf)
+(cd local-cluster;     git clean -Xfd)
+
+git clean -Xf
 ```
