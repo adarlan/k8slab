@@ -1,0 +1,28 @@
+terraform {
+  required_providers {
+    helm = {
+      source  = "hashicorp/helm"
+      version = "2.12.1"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "2.27.0"
+    }
+  }
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = var.cluster_endpoint
+    cluster_ca_certificate = file(var.cluster_ca_certificate)
+    client_certificate     = file(var.root_user_certificate)
+    client_key             = file(var.root_user_key)
+  }
+}
+
+provider "kubernetes" {
+  host                   = var.cluster_endpoint
+  cluster_ca_certificate = file(var.cluster_ca_certificate)
+  client_certificate     = file(var.root_user_certificate)
+  client_key             = file(var.root_user_key)
+}
