@@ -3,7 +3,7 @@ resource "helm_release" "loki" {
   name = "loki"
 
   namespace        = "monitoring"
-  create_namespace = true
+  create_namespace = false
 
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki"
