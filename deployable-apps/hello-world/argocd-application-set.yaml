@@ -4,10 +4,6 @@ kind: ApplicationSet
 metadata:
   name: hello-world
   namespace: argocd
-  labels:
-    selection: application-sets
-  finalizers:
-  - resources-finalizer.argocd.argoproj.io
 
 spec:
   generators:
@@ -75,5 +71,5 @@ spec:
         automated:
           prune: true
           selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
+        # syncOptions:
+        #   - CreateNamespace=true
