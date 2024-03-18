@@ -16,6 +16,12 @@ echo ":" >> script.sh
 
 isCommand="false"
 
+printf_title=""
+add_title() {
+    [ "$printf_title" != "" ] && echo $printf_title >> script.sh
+    printf_title=""
+}
+
 while IFS= read -r line; do
     if [ "$isCommand" = "true" ]; then
 
@@ -32,13 +38,15 @@ while IFS= read -r line; do
     else
         if [ "$line" = "\`\`\`bash" ]; then
             # CODE BLOCK START
+            add_title
             isCommand="true"
             echo "(" >> script.sh
             echo "set $shellOptions" >> script.sh
         
         elif [[ "$line" == \#* ]]; then
             # TITLE
-            echo "printf \"\\e[1;34m$line\\e[0m\\n\"" >> script.sh
+            # echo "printf \"\\e[1;34m$line\\e[0m\\n\"" >> script.sh
+            printf_title="printf \"\\e[1;34m$line\\e[0m\\n\""
             # echo 'read -p "Press Enter to continue..."' >> script.sh
 
         elif [[ $line =~ ^\<\!\-\-\ FUNCTION\ ([a-z_]+)\ \-\-\>$ ]]; then
@@ -49,8 +57,13 @@ while IFS= read -r line; do
 
         elif [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]]; then
             # COMMAND
+            add_title
             command="${BASH_REMATCH[1]}"
+            echo "(" >> script.sh
+            echo "set $shellOptions" >> script.sh
             echo "$command" >> script.sh
+            echo ")" >> script.sh
+            echo "echo" >> script.sh
 
         elif [[ $line =~ ^\<\!\-\-\ CONFIG\ ([a-zA-Z]+)\:\ (.*)\ \-\-\>$ ]]; then
             # CONFIG
