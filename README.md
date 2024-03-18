@@ -19,10 +19,11 @@ Run the simulation by following these steps:
 
 1. CLI Tools Installation
 2. Cluster Provisioning
-3. RBAC and Namespace Configuration
-4. Cluster Tools Installation
-5. Application Deployment
-6. Cleanup and Tear Down
+3. Cluster Operators Authorization
+4. Namespace Configurations
+5. Cluster Tools Installation
+6. Application Deployments
+7. Cleanup and Tear Down
 
 To execute these steps automatically, use the [`run.sh`](./run.sh) script:
 
@@ -74,14 +75,6 @@ TF_LOG="INFO" \
 terraform -chdir=local-cluster apply -auto-approve
 ```
 
-## 3. RBAC and Namespace Configuration
-
-This step involves configuring Role-Based Access Control (RBAC) resources,
-as well as setting namespace limit ranges and resource quotas.
-
-KinD automatically sets up a kubeconfig to access the cluster, but we won't use it.
-Instead, we will set up the kubeconfig from scratch.
-
 ### Retrieving cluster credentials
 
 ```bash
@@ -105,9 +98,14 @@ terraform -chdir=local-cluster output -raw root_user_key > root.key
 terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
 ```
 
-### Grating cluster operators access
+## 3. Cluster Operators Authorization
 
-Cluster operators are cluster-level users and service accounts that will be given cluster roles.
+This step involves granting cluster operators access.
+
+Cluster operators are cluster-wide users and service accounts that will be given cluster roles.
+
+This is the only action that requires the root user credentials.
+After this, we'll have less-privileged users and service accounts to operate the cluster.
 
 ```bash
 cluster_root_user_credentials_terraform="
@@ -125,39 +123,57 @@ apply $cluster_root_user_credentials_terraform \
 -auto-approve
 ```
 
-### Retrieving cluster-level service account tokens
+### Retrieving namespace manager token
 
-In a real environment, these tokens would typically be incorporated into CI/CD secrets.
-However, for the purposes of this simulation, let's store them in files instead.
+Namespace manager is a cluster-wide service account responsible for managing namespace configurations.
 
 ```bash
-# Retrieving namespace-manager service account token
 terraform -chdir=cluster-operators output -raw namespace_manager_token > namespace-manager.token
+```
 
-# Retrieving cluster-tools-installer service account token
+### Retrieving cluster tools installer token
+
+Cluster tools installer is a cluster-wide service account responsible for installing the cluster tools.
+
+```bash
 terraform -chdir=cluster-operators output -raw cluster_tools_installer_token > cluster-tools-installer.token
 ```
 
-### Setting cluster entry in kubeconfig
+### Signing Jane Ops certificate
+
+Jane Ops is a cluster-wide user responsible for administrating the cluster.
+
+To facilitate your interaction with the cluster using the `kubectl` CLI tool,
+we will create Jane Ops' credentials and set up them in your kubeconfig.
+
+To use her credentials,
+simply run `kubectl config use-context janeops` before your `kubectl` commands
+or add the `--context janeops` option to each `kubectl` command.
 
 ```bash
+# Generating private key
+openssl genrsa -out janeops.key 2048
+
+# Generating Certificate Signing Request (CSR) file
+openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
+
+# Signing certificate
+openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
+
 # Setting cluster entry in kubeconfig
 kubectl config set-cluster k8slab --server=$(cat cluster-endpoint.txt) --certificate-authority=$(realpath cluster-ca.crt) --embed-certs=true
-```
 
-### Setting root user in kubeconfig
-
-```bash
 # Setting user entry in kubeconfig
-kubectl config set-credentials k8slab-root --client-key=root.key --client-certificate=root.crt --embed-certs=true
+kubectl config set-credentials janeops --client-key=janeops.key --client-certificate=janeops.crt --embed-certs=true
 
 # Setting context entry in kubeconfig
-kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
+kubectl config set-context janeops --cluster=k8slab --user=janeops
 ```
 
-### Applying namespace-configs
+## 4. Namespace Configurations
 
-Configuring namespaces, as well as their:
+This step involves configuring all the namespaces,
+as well as their:
 - service accounts,
 - service account secrets,
 - roles,
@@ -165,104 +181,73 @@ Configuring namespaces, as well as their:
 - resource quotas,
 - and limit ranges.
 
+This action requires the namespace manager credentials.
+
 ```bash
-namespace_manager_credentials_helm="
-  --kube-apiserver=$(cat cluster-endpoint.txt)
-  --kube-ca-file=cluster-ca.crt
-  --kube-token=$(cat namespace-manager.token)
+namespace_manager_credentials_terraform="
+  -var cluster_endpoint=$(cat cluster-endpoint.txt)
+  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
+  -var namespace_manager_token=$(realpath namespace-manager.token)
 "
 
-release=namespace-configs
-chart=./namespace-configs
-values=./namespace-configs/values.yaml
-namespace=namespace-configs
+terraform -chdir=namespace-configs init
 
-list=$(helm $namespace_manager_credentials_helm list --short -n $namespace)
-echo "$list" | grep -q "^$release$" \
-&& helm $namespace_manager_credentials_helm upgrade $release --values $values $chart -n $namespace \
-|| helm $namespace_manager_credentials_helm install $release --values $values $chart -n $namespace --create-namespace
+TF_LOG=INFO \
+terraform -chdir=namespace-configs \
+apply $namespace_manager_credentials_terraform \
+-auto-approve
 ```
 
-### Retrieving namespace-level service account tokens
+### Retrieving Argo CD application deployer token
+
+Argo CD application deployer is a namespace-level service account responsible for managing the `Application` and `ApplicationSet` resources in the `argocd` namespace.
 
 ```bash
-namespace_manager_credentials_kubectl="
-  --server=$(cat cluster-endpoint.txt)
-  --certificate-authority=cluster-ca.crt
-  --token=$(cat namespace-manager.token)
-"
-
-# Retrieving argocd application-deployer service account token
-kubectl $namespace_manager_credentials_kubectl \
-get secret application-deployer -n argocd \
--o jsonpath='{.data.token}' | base64 --decode > argocd-application-deployer.token
+terraform -chdir=namespace-configs output -raw argocd_application_deployer_token > argocd-application-deployer.token
 ```
 
-### Granting user credentials
+### Signing John Dev certificate
 
-To facilitate your interaction with the cluster using the `kubectl` CLI,
-we will create dummy user credentials and set up them in kubeconfig.
+John Dev is a namespace-level user responsible for developing applications,
+authorized to manage resources deployed in the `development` namespace.
 
-To simulate a user,
-simply run `kubectl config use-context <username>` before your `kubectl` command
-or add the `--context <username>` option to your `kubectl` command.
+To facilitate your interaction with these resources using the `kubectl` CLI tool,
+we will create John Dev's credentials and set up them in your kubeconfig.
 
-Usernames:
-
-- `johndev`
-- `janeops`
+To use his credentials,
+simply run `kubectl config use-context johndev` before your `kubectl` commands
+or add the `--context johndev` option to each `kubectl` command.
 
 ```bash
-# Generating private keys
+# Generating private key
 openssl genrsa -out johndev.key 2048
-openssl genrsa -out janeops.key 2048
 
-# Generating Certificate Signing Request (CSR) files
+# Generating Certificate Signing Request (CSR) file
 openssl req -new -key johndev.key -out johndev.csr -subj "/CN=John Dev"
-openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
 
-# Signing certificates
+# Signing certificate
 openssl x509 -req -in johndev.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out johndev.crt -days 1
-openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
 
-# Setting user entries in kubeconfig
-kubectl config set-credentials k8slab-johndev --client-key=johndev.key --client-certificate=johndev.crt --embed-certs=true
-kubectl config set-credentials k8slab-janeops --client-key=janeops.key --client-certificate=janeops.crt --embed-certs=true
+# Setting user entry in kubeconfig
+kubectl config set-credentials johndev --client-key=johndev.key --client-certificate=johndev.crt --embed-certs=true
 
-# Setting context entries in kubeconfig
-kubectl config set-context k8slab-johndev --cluster=k8slab --user=k8slab-johndev
-kubectl config set-context k8slab-janeops --cluster=k8slab --user=k8slab-janeops
+# Setting context entry in kubeconfig
+kubectl config set-context johndev --cluster=k8slab --user=johndev
 ```
 
-## 4. Cluster Tools Installation
+## 5. Cluster Tools Installation
 
 This step involves installing various Helm charts that extend the functionality of the Kubernetes cluster,
 improving security, networking, monitoring, deployment process, etc.,
 by adding tools such as Argo CD, Prometheus, Grafana, Loki, Promtail, Trivy Operator, Ingress NGINX Controller, and more.
 
-These tools can be installed in 3 ways:
-
-- Using Helm
-- Using Terraform
-- Using Argo CD (in this case, Argo CD must be installed first with Helm or Terraform)
-
-Let's use Terraform!
-
-Before proceeding with the installation,
-execute each of the following commands in a new tab in your terminal to watch the pods start up:
-
-- `watch -n 1 kubectl get pods --namespace ingress`
-- `watch -n 1 kubectl get pods --namespace monitoring`
-- `watch -n 1 kubectl get pods --namespace trivy`
-- `watch -n 1 kubectl get pods --namespace argocd`
-
-### Installing cluster tools with Terraform
+This action requires the cluster tools installer credentials.
 
 ```bash
 cluster_tools_installer_credentials_terraform="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var service_account_token=$(realpath cluster-tools-installer.token)
+  -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
 "
 
 terraform -chdir=cluster-tools init
@@ -274,122 +259,60 @@ apply $cluster_tools_installer_credentials_terraform \
 -parallelism=1
 ```
 
+During the installation,
+you can execute each of the following commands in a new tab in your terminal to watch the pods start up:
+
+- `watch -n 1 kubectl --context janeops get pods --namespace ingress`
+- `watch -n 1 kubectl --context janeops get pods --namespace monitoring`
+- `watch -n 1 kubectl --context janeops get pods --namespace trivy`
+- `watch -n 1 kubectl --context janeops get pods --namespace argocd`
+
 ### Retrieving Argo CD admin password
 
 ```bash
-cluster_operator_user_credentials_kubectl="
-  --context k8slab-janeops
-"
+terraform -chdir=cluster-tools output -raw argocd_admin_password > argocd-admin.password
+```
 
-kubectl $cluster_operator_user_credentials_kubectl \
-get secret argocd-initial-admin-secret -n argocd \
--o jsonpath="{.data.password}" | base64 --decode > argocd-admin.password
+### Retrieving Grafana admin password
+
+```bash
+terraform -chdir=cluster-tools output -raw grafana_admin_password > grafana-admin.password
 ```
 
 ### Logging in to Argo CD with its CLI tool
 
-TODO Using the --grpc-web flag because ingressGrpc is not yet configured
-
 ```bash
-argocd_admin_credentials_argocd_login="
+argocd_admin_credentials="
   --username admin
   --password $(cat argocd-admin.password)
 "
 
-argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials_argocd_login
+argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials
 ```
 
 ### Accessing Argo CD in your browser
 
-- http://argocd.localhost
+- [http://argocd.localhost](http://argocd.localhost)
 - Username: `admin`
 - The password is stored in the `argocd-admin.password` file
 
 <!-- COMMAND nohup xdg-open http://argocd.localhost > /dev/null 2>&1 -->
 
-### Installing cluster tools with Argo CD
-
-```bash
-argocd_application_deployer_credentials_helm="
-  --kube-apiserver=$(cat cluster-endpoint.txt)
-  --kube-ca-file=$(realpath cluster-ca.crt)
-  --kube-token=$(cat argocd-application-deployer.token)
-"
-
-release=cluster-tools-argocd-apps
-chart=./cluster-tools/.argocd-apps
-values=./cluster-tools/.argocd-apps/values.yaml
-namespace=argocd
-
-list=$(helm $argocd_application_deployer_credentials_helm list --short -n $namespace)
-echo "$list" | grep -q "^$release$" \
-&& helm $argocd_application_deployer_credentials_helm upgrade $release --values $values $chart -n $namespace \
-|| helm $argocd_application_deployer_credentials_helm install $release --values $values $chart -n $namespace
-```
-
-### Waiting security stack synchronization
-
-```bash
-argocd app wait security-stack
-```
-
-### Waiting monitoring stack synchronization
-
-The monitoring stack usually takes a long time to synchronize,
-and its health state usually transitions to 'Degraded' at some point during the synchronization,
-causing the `argocd app wait` command to fail, despite the synchronization process continuing.
-Because of this we will try to wait two more times.
-
-```bash
-retries=0
-until argocd app wait monitoring-stack; do
-  ((++retries)); if [ $retries -ge 3 ]; then exit 1; fi
-done
-```
-
-<!-- TODO promtail error:
-level=error 
-caller=main.go:170 
-msg="error creating promtail" 
-error="failed to make file target manager: too many open files"
--->
-
-<!-- TODO loki-logs error:
-caller=main.go:74 
-level=error 
-msg="error creating the agent server entrypoint" 
-err="unable to apply config for monitoring/monitoring-stack-loki: unable to create logs instance: failed to make file target manager: too many open files"
--->
-
-<!-- https://maestral.app/docs/inotify-limits -->
-
 ### Accessing Prometheus in your browser
 
-- http://prometheus.localhost
+- [http://prometheus.localhost](http://prometheus.localhost)
 
 <!-- COMMAND nohup xdg-open http://prometheus.localhost > /dev/null 2>&1 -->
 
-### Retrieving Grafana admin password
-
-```bash
-cluster_operator_user_credentials_kubectl="
-  --context k8slab-janeops
-"
-
-kubectl $cluster_operator_user_credentials_kubectl \
-get secret monitoring-stack-grafana -n monitoring \
--o jsonpath="{.data.admin-password}" | base64 --decode > grafana-admin.password
-```
-
 ### Accessing Grafana in your browser
 
-- http://grafana.localhost
+- [http://grafana.localhost](http://grafana.localhost)
 - Username: `admin`
 - The password is stored in the `grafana-admin.password` file
 
 <!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
 
-## 5. Application Deployment
+## 6. Application Deployments
 
 This step involves deploying example applications onto the Kubernetes cluster.
 
@@ -680,11 +603,11 @@ Other examples:
 - Items failed to create due to server error: `sum(crudify_http_requests_total{method="POST", status="500"})`
 - Successful requests by method: `sum by (method) (crudify_http_requests_total{status="200"})`
 
-<!-- FUNCTION drop -->
-## 6. Cleanup and Tear Down
+<!-- FUNCTION down -->
+## 7. Cleanup and Tear Down
 
 This step involves dismantling and removing all components and configurations associated with the Kubernetes cluster.
-It includes undeploying applications, uninstalling cluster-wide tools, and removing RBAC and namespace configurations.
+It includes undeploying applications, uninstalling cluster tools, and removing RBAC and namespace configurations.
 Finally, the Kubernetes cluster itself is destroyed.
 
 ### Undeploying applications
@@ -708,7 +631,7 @@ delete \
 cluster_tools_installer_credentials_terraform="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var service_account_token=$(realpath cluster-tools-installer.token)
+  -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
 "
 
 terraform -chdir=cluster-tools \
@@ -716,34 +639,27 @@ destroy $cluster_tools_installer_credentials_terraform \
 -auto-approve
 ```
 
-### Revoking user credentials
-
-TODO How to revoke user certificates?
-
-### Deleting RBAC resources
-
-```bash
-kubectl --context k8slab-root delete -f rbac/ -l selection=rbac
-```
-
-### Destroying local cluster
+### Destroying cluster
 
 ```bash
 terraform -chdir=local-cluster destroy -auto-approve
 ```
 
-<!-- FUNCTION nuke -->
-### Nuke
+### Stopping and removing Docker containers used as cluster nodes
 
 ```bash
-# Stopping and removing Docker containers used as cluster nodes
 docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_name; do
-    docker stop "$container_name" >/dev/null 2>&1
-    docker rm "$container_name" >/dev/null 2>&1
+  docker stop "$container_name" >/dev/null 2>&1
+  docker rm "$container_name" >/dev/null 2>&1
 done
+```
 
-# Removing gitignored files
-(cd local-cluster; git clean -Xfd)
+### Removing gitignored files
+
+```bash
 (cd cluster-tools; git clean -Xfd)
-git clean -Xf
+(cd namespace-configs; git clean -Xfd)
+(cd cluster-operators; git clean -Xfd)
+(cd local-cluster; git clean -Xfd)
+(git clean -Xf)
 ```

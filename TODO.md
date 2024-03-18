@@ -44,6 +44,20 @@ if [ $(sysctl -n fs.inotify.max_user_instances) -lt 1024 ]; then
 fi
 ```
 
+promtail error:
+level=error 
+caller=main.go:170 
+msg="error creating promtail" 
+error="failed to make file target manager: too many open files"
+
+loki-logs error:
+caller=main.go:74 
+level=error 
+msg="error creating the agent server entrypoint" 
+err="unable to apply config for monitoring/monitoring-stack-loki: unable to create logs instance: failed to make file target manager: too many open files"
+
+https://maestral.app/docs/inotify-limits
+
 ## trivy-operator
 
 You have installed Trivy Operator in the trivy namespace.
@@ -254,3 +268,42 @@ docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.key cluster-ca.key
 # Retrieving cluster's Certificate Authority (CA) certificate
 docker cp k8slab-control-plane:/etc/kubernetes/pki/ca.crt cluster-ca.crt
 ```
+
+In a real environment, these tokens would typically be incorporated into CI/CD secrets.
+However, for the purposes of this simulation, let's store them in files instead.
+
+## kubeconfig
+
+### Setting root user in kubeconfig
+
+```bash
+# Setting user entry in kubeconfig
+kubectl config set-credentials k8slab-root --client-key=root.key --client-certificate=root.crt --embed-certs=true
+
+# Setting context entry in kubeconfig
+kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
+```
+
+## cluster-tools
+
+These tools can be installed in 3 ways:
+
+- Using Helm
+- Using Terraform
+- Using Argo CD (in this case, Argo CD must be installed first with Helm or Terraform)
+
+Let's use Terraform!
+
+## argocd
+
+Using the --grpc-web flag because ingressGrpc is not yet configured
+
+##
+
+<!-- ## 3. RBAC and Namespace Configuration
+
+This step involves configuring Role-Based Access Control (RBAC) resources,
+as well as setting namespace limit ranges and resource quotas.
+
+KinD automatically sets up a kubeconfig to access the cluster, but we won't use it.
+Instead, we will set up the kubeconfig from scratch. -->

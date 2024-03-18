@@ -43,3 +43,43 @@ destroy \
 -var cluster_endpoint=$(cat cluster-endpoint.txt) \
 -auto-approve
 ```
+
+### Installing cluster tools with Argo CD
+
+```bash
+argocd_application_deployer_credentials_helm="
+  --kube-apiserver=$(cat cluster-endpoint.txt)
+  --kube-ca-file=$(realpath cluster-ca.crt)
+  --kube-token=$(cat argocd-application-deployer.token)
+"
+
+release=cluster-tools-argocd-apps
+chart=./cluster-tools/.argocd-apps
+values=./cluster-tools/.argocd-apps/values.yaml
+namespace=argocd
+
+list=$(helm $argocd_application_deployer_credentials_helm list --short -n $namespace)
+echo "$list" | grep -q "^$release$" \
+&& helm $argocd_application_deployer_credentials_helm upgrade $release --values $values $chart -n $namespace \
+|| helm $argocd_application_deployer_credentials_helm install $release --values $values $chart -n $namespace
+```
+
+### Waiting security stack synchronization
+
+```bash
+argocd app wait security-stack
+```
+
+### Waiting monitoring stack synchronization
+
+The monitoring stack usually takes a long time to synchronize,
+and its health state usually transitions to 'Degraded' at some point during the synchronization,
+causing the `argocd app wait` command to fail, despite the synchronization process continuing.
+Because of this we will try to wait two more times.
+
+```bash
+retries=0
+until argocd app wait monitoring-stack; do
+  ((++retries)); if [ $retries -ge 3 ]; then exit 1; fi
+done
+```
