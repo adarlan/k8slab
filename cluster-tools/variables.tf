@@ -1,11 +1,14 @@
-variable "service_account_token" {
-  type = string
+variable "cluster_tools_installer_token" {
+  type      = string
+  sensitive = true
 }
 
 variable "cluster_ca_certificate" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 variable "cluster_endpoint" {
-  type = string
+  type      = string
+  sensitive = true
 }
