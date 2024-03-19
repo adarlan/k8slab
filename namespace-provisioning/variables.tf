@@ -8,7 +8,7 @@ variable "cluster_ca_certificate" {
   sensitive = true
 }
 
-variable "namespace_provisioner_token" {
+variable "namespace_provisioning_token" {
   type      = string
   sensitive = true
 }
