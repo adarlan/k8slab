@@ -8,7 +8,7 @@ output "namespace_rbac_token" {
   sensitive = true
 }
 
-output "cluster_tools_token" {
-  value     = data.kubernetes_secret.cluster_tools.data["token"]
+output "cluster_toolkit_token" {
+  value     = data.kubernetes_secret.cluster_toolkit.data["token"]
   sensitive = true
 }

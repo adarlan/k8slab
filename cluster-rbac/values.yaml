@@ -37,7 +37,7 @@ serviceAccounts:
     - roles
     - rolebindings
 
-- name: cluster-tools
+- name: cluster-toolkit
   permissions:
     # Note: it needs full access to install argocd
   - apiGroup: "*"

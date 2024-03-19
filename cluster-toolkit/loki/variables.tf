@@ -1,4 +1,4 @@
-variable "cluster_tools_token" {
+variable "cluster_toolkit_token" {
   type      = string
   sensitive = true
 }

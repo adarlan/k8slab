@@ -18,12 +18,12 @@ data "kubernetes_secret" "namespace_rbac" {
   }
 }
 
-data "kubernetes_secret" "cluster_tools" {
+data "kubernetes_secret" "cluster_toolkit" {
 
   depends_on = [helm_release.cluster_rbac]
 
   metadata {
-    name      = "cluster-tools"
-    namespace = "cluster-tools"
+    name      = "cluster-toolkit"
+    namespace = "cluster-toolkit"
   }
 }
