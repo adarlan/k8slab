@@ -15,12 +15,12 @@ provider "helm" {
   kubernetes {
     host                   = var.cluster_endpoint
     cluster_ca_certificate = file(var.cluster_ca_certificate)
-    token                  = file(var.cluster_tools_installer_token)
+    token                  = file(var.cluster_tools_token)
   }
 }
 
 provider "kubernetes" {
   host                   = var.cluster_endpoint
   cluster_ca_certificate = file(var.cluster_ca_certificate)
-  token                  = file(var.cluster_tools_installer_token)
+  token                  = file(var.cluster_tools_token)
 }

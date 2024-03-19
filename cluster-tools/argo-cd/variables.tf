@@ -1,4 +1,4 @@
-variable "cluster_tools_installer_token" {
+variable "cluster_tools_token" {
   type      = string
   sensitive = true
 }
