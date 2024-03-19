@@ -415,10 +415,10 @@ This step involves deploying example applications into the Kubernetes cluster.
 
 #### Application source code
 
-The source code of the applications reside in the [`apps`](./apps/) directory:
+The source code of the applications reside in the [`app-code`](./app-code/) directory:
 
-- [`apps/hello-world`](./apps/hello-world/)
-- [`apps/crudify`](./apps/crudify/)
+- [`app-code/hello-world`](./app-code/hello-world/)
+- [`app-code/crudify`](./app-code/crudify/)
 
 GitHub Actions watches for changes in these directories
 to test, build and push the Docker images to Docker Hub.

@@ -5,14 +5,14 @@ on:
     branches:
       - '**'
     paths:
-      - 'apps/hello-world/**'
+      - 'app-code/hello-world/**'
     tags:
       - '**'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'apps/hello-world/**'
+      - 'app-code/hello-world/**'
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     name: Image Test
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/hello-world
+      build_context: app-code/hello-world
 
   image-push:
     name: Image Push
@@ -28,7 +28,7 @@ jobs:
       - image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/hello-world
+      build_context: app-code/hello-world
       full_image_name: adarlan/hello-world:${{ github.ref_name }}
     secrets:
       dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}

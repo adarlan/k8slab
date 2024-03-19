@@ -5,14 +5,14 @@ on:
     branches:
       - '**'
     paths:
-      - 'apps/crudify/**'
+      - 'app-code/crudify/**'
     tags:
       - '**'
   pull_request:
     branches:
       - 'master'
     paths:
-      - 'apps/crudify/**'
+      - 'app-code/crudify/**'
   workflow_dispatch:
 
 jobs:
@@ -20,43 +20,43 @@ jobs:
   item-creator-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-creator
   item-reader-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-reader
   item-updater-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-updater
   item-deleter-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-deleter
 
   batch-item-creator-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-creator
   batch-item-reader-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-reader
   batch-item-updater-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-updater
   batch-item-deleter-image-test:
     uses: ./.github/workflows/.docker-image-test.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-deleter
 
   item-creator-image-push:
@@ -64,7 +64,7 @@ jobs:
       - item-creator-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-creator
       full_image_name: adarlan/crudify-item-creator:${{ github.ref_name }}
     secrets:
@@ -75,7 +75,7 @@ jobs:
       - item-reader-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-reader
       full_image_name: adarlan/crudify-item-reader:${{ github.ref_name }}
     secrets:
@@ -86,7 +86,7 @@ jobs:
       - item-updater-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-updater
       full_image_name: adarlan/crudify-item-updater:${{ github.ref_name }}
     secrets:
@@ -97,7 +97,7 @@ jobs:
       - item-deleter-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/services
+      build_context: app-code/crudify/services
       options: --build-arg APP_NAME=item-deleter
       full_image_name: adarlan/crudify-item-deleter:${{ github.ref_name }}
     secrets:
@@ -109,7 +109,7 @@ jobs:
       - batch-item-creator-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-creator
       full_image_name: adarlan/crudify-batch-item-creator:${{ github.ref_name }}
     secrets:
@@ -120,7 +120,7 @@ jobs:
       - batch-item-reader-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-reader
       full_image_name: adarlan/crudify-batch-item-reader:${{ github.ref_name }}
     secrets:
@@ -131,7 +131,7 @@ jobs:
       - batch-item-updater-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-updater
       full_image_name: adarlan/crudify-batch-item-updater:${{ github.ref_name }}
     secrets:
@@ -142,7 +142,7 @@ jobs:
       - batch-item-deleter-image-test
     uses: ./.github/workflows/.docker-image-push.yaml
     with:
-      build_context: apps/crudify/clients
+      build_context: app-code/crudify/clients
       options: --build-arg APP_NAME=batch-item-deleter
       full_image_name: adarlan/crudify-batch-item-deleter:${{ github.ref_name }}
     secrets:
