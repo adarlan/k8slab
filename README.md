@@ -30,7 +30,7 @@ To explore with the cluster features,
 we will deploy two example applications:
 
 - Hello World: A simple web application that displays a greeting message and will be deployed across multiple environments with distinct configuration.
-- CRUDify: A microservice-based CRUD application composed by multiple services and clients designed to experiment with the cluster's capabilities.
+- CRUDify: A microservice-based CRUD application composed by multiple services and clients designed to experiment with metrics, logs, dashboards, and other features.
 
 ### Requirements
 
@@ -106,7 +106,7 @@ echo \
 <!-- END local-cluster -->
 <!-- BEGIN cluster-operators -->
 
-## 3. Cluster-Level RBAC
+## 2. Cluster-Level RBAC
 
 This step involves granting cluster operators access.
 
@@ -190,10 +190,13 @@ kubectl config set-context janeops --cluster=k8slab --user=janeops
 <!-- END cluster-operators -->
 <!-- BEGIN namespace-configs -->
 
-## 4. Namespace-Level RBAC & Resource Management
+## 3. Namespace Provisioning
 
-This step involves configuring namespaces along with their resource quotas, and limit ranges,
-and granting namespace-level access for users and service accounts.
+This step involves configuring namespaces along with their resource quotas and limit ranges.
+
+## 4. Namespace-Level RBAC
+
+This step involves granting namespace-level access for users and service accounts.
 
 By default, this action will create:
 - the `argocd`, `ingress`, `monitoring`, and `trivy` namespaces for the cluster tools,
@@ -258,7 +261,7 @@ kubectl config set-context johndev --cluster=k8slab --user=johndev
 <!-- END namespace-configs -->
 <!-- BEGIN cluster-tools -->
 
-## 5. Cluster Tools Installation
+## 5. Cluster Toolkit Installation
 
 This step involves installing various Helm charts that extend the functionality of the Kubernetes cluster,
 improving networking, deployment, monitoring, security, and more.
@@ -360,7 +363,7 @@ argocd login --grpc-web --insecure argocd.localhost --username admin --password 
 <!-- END cluster-tools -->
 <!-- BEGIN deploy -->
 
-## 6. Application Deployments
+## 6. Application Deployment
 
 This step involves deploying example applications onto the Kubernetes cluster.
 
