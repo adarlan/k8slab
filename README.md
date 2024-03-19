@@ -425,10 +425,10 @@ to test, build and push the Docker images to Docker Hub.
 
 #### Application deployment configuration
 
-The deployment configuration of the applications reside in the [`deploy`](./deploy/) directory.
+The deployment configuration of the applications reside in the [`app-deploy`](./app-deploy/) directory.
 
-- [`deploy/hello-world`](./deploy/hello-world/)
-- [`deploy/crudify`](./deploy/crudify/)
+- [`app-deploy/hello-world`](./app-deploy/hello-world/)
+- [`app-deploy/crudify`](./app-deploy/crudify/)
 
 Argo CD watches for changes in these directories
 to deploy and synchronize modifications into the cluster.
@@ -463,7 +463,7 @@ and deployed with a different number of replicas.
 | `hello-society`  | `production`  | `8`      | `http://hello.localhost`         | `Hello, Society!`  |
 
 You can change this configuration by editing the
-[`deploy/hello-world/argocd-application-set.yaml`](./deploy/hello-world/argocd-application-set.yaml)
+[`app-deploy/hello-world/argocd-application-set.yaml`](./app-deploy/hello-world/argocd-application-set.yaml)
 file.
 
 #### Hello World Deployment
@@ -474,7 +474,7 @@ This action requires the Argo CD application deployer credentials.
 kubectl $(cat argocd-application-deployer.credentials) \
 apply \
 --namespace argocd \
---filename deploy/hello-world/argocd-application-set.yaml
+--filename app-deploy/hello-world/argocd-application-set.yaml
 ```
 
 #### Hello World Synchronization
@@ -600,7 +600,7 @@ This action requires the `argocd-application-deployer` credentials.
 kubectl $(cat argocd-application-deployer.credentials) \
 apply \
 --namespace argocd \
---filename deploy/crudify/argocd-application.yaml
+--filename app-deploy/crudify/argocd-application.yaml
 ```
 
 #### CRUDify Synchronization
