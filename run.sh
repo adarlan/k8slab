@@ -35,7 +35,7 @@ add_title() {
     [ "$printf_title" != "" ] && echo $printf_title >> script.sh
     printf_title=""
     if [ "$press_enter_to_continue" = "true" ]; then
-        echo 'read -p "Press Enter to continue..."' >> script.sh
+        # echo 'read -p "Press Enter to continue..."' >> script.sh
         press_enter_to_continue="false"
     fi
 }
