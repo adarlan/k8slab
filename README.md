@@ -10,7 +10,7 @@ This simulation includes:
 - [Helm](https://helm.sh/) for package management
 - [Kustomize](https://kustomize.io/) for deployment configuration
 - [Argo CD](https://argoproj.github.io/cd/) for continuous deployment
-- [Ingress-Nginx Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
+- [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
 - [Prometheus](https://prometheus.io/) for metrics and alerts
 - [Grafana](https://grafana.com/grafana/) for dashboard visualization
 - [Grafana Loki](https://grafana.com/oss/loki/) for log aggregation
@@ -31,7 +31,8 @@ To execute these steps automatically, use the [`run.sh`](./run.sh) script:
 - `./run.sh up`
 - `./run.sh down`
 
-<!-- FUNCTION up -->
+<!-- BEGIN up -->
+<!-- BEGIN tool-versions -->
 
 ## 1. CLI Tools Installation
 
@@ -58,6 +59,9 @@ asdf plugin add argocd
 # Install tools defined in .tool-versions
 while IFS= read -r tool_version; do asdf install $tool_version; done < .tool-versions
 ```
+
+<!-- END tool-versions -->
+<!-- BEGIN local-cluster -->
 
 ## 2. Cluster Provisioning
 
@@ -99,7 +103,17 @@ terraform -chdir=local-cluster output -raw root_user_key > root.key
 
 # Retrieving root user certificate
 terraform -chdir=local-cluster output -raw root_user_certificate > root.crt
+
+echo \
+-var cluster_endpoint=$(cat cluster-endpoint.txt) \
+-var cluster_ca_certificate=$(realpath cluster-ca.crt) \
+-var root_user_key=$(realpath root.key) \
+-var root_user_certificate=$(realpath root.crt) \
+> root-user.credentials
 ```
+
+<!-- END local-cluster -->
+<!-- BEGIN cluster-operators -->
 
 ## 3. Cluster-Level RBAC
 
@@ -118,35 +132,36 @@ This is the only action that requires the root user credentials.
 After this, we'll have less-privileged users and service accounts to operate the cluster.
 
 ```bash
-root_user_credentials="
-  -var cluster_endpoint=$(cat cluster-endpoint.txt)
-  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var root_user_key=$(realpath root.key)
-  -var root_user_certificate=$(realpath root.crt)
-"
-
 terraform -chdir=cluster-operators init
-
-TF_LOG=INFO \
-terraform -chdir=cluster-operators \
-apply $root_user_credentials \
--auto-approve
+terraform -chdir=cluster-operators apply $(cat root-user.credentials) -auto-approve
 ```
 
-### Retrieving namespace manager token
+### Retrieving namespace manager credentials
 
 Namespace manager is a cluster-wide service account responsible for managing namespace-level configurations.
 
 ```bash
 terraform -chdir=cluster-operators output -raw namespace_manager_token > namespace-manager.token
+
+echo \
+-var cluster_endpoint=$(cat cluster-endpoint.txt) \
+-var cluster_ca_certificate=$(realpath cluster-ca.crt) \
+-var namespace_manager_token=$(realpath namespace-manager.token) \
+> namespace-manager.credentials
 ```
 
-### Retrieving cluster tools installer token
+### Retrieving cluster tools installer credentials
 
 Cluster tools installer is a cluster-wide service account responsible for installing tools that extend the cluster's functionality.
 
 ```bash
 terraform -chdir=cluster-operators output -raw cluster_tools_installer_token > cluster-tools-installer.token
+
+echo \
+-var cluster_endpoint=$(cat cluster-endpoint.txt) \
+-var cluster_ca_certificate=$(realpath cluster-ca.crt) \
+-var cluster_tools_installer_token=$(realpath cluster-tools-installer.token) \
+> cluster-tools-installer.credentials
 ```
 
 ### Signing Jane Ops certificate
@@ -181,6 +196,9 @@ kubectl config set-credentials janeops --client-key=janeops.key --client-certifi
 kubectl config set-context janeops --cluster=k8slab --user=janeops
 ```
 
+<!-- END cluster-operators -->
+<!-- BEGIN namespace-configs -->
+
 ## 4. Namespace-Level RBAC & Resource Management
 
 This step involves configuring namespaces along with their resource quotas, and limit ranges,
@@ -198,26 +216,22 @@ You can change this configuration by editing the [`namespace-configs/values.yaml
 This action requires the namespace manager credentials.
 
 ```bash
-namespace_manager_credentials="
-  -var cluster_endpoint=$(cat cluster-endpoint.txt)
-  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var namespace_manager_token=$(realpath namespace-manager.token)
-"
-
 terraform -chdir=namespace-configs init
-
-TF_LOG=INFO \
-terraform -chdir=namespace-configs \
-apply $namespace_manager_credentials \
--auto-approve
+terraform -chdir=namespace-configs apply $(cat namespace-manager.credentials) -auto-approve
 ```
 
-### Retrieving Argo CD application deployer token
+### Retrieving Argo CD application deployer credentials
 
 Argo CD application deployer is a namespace-level service account responsible for managing the `Application` and `ApplicationSet` resources in the `argocd` namespace.
 
 ```bash
 terraform -chdir=namespace-configs output -raw argocd_application_deployer_token > argocd-application-deployer.token
+
+echo \
+--server=$(cat cluster-endpoint.txt) \
+--certificate-authority=$(realpath cluster-ca.crt) \
+--token=$(cat argocd-application-deployer.token) \
+> argocd-application-deployer.credentials
 ```
 
 ### Signing John Dev certificate
@@ -250,62 +264,65 @@ kubectl config set-credentials johndev --client-key=johndev.key --client-certifi
 kubectl config set-context johndev --cluster=k8slab --user=johndev
 ```
 
+<!-- END namespace-configs -->
+<!-- BEGIN cluster-tools -->
+
 ## 5. Cluster Tools Installation
 
 This step involves installing various Helm charts that extend the functionality of the Kubernetes cluster,
-improving deployment, networking, monitoring, security, etc.,
-by adding tools such as:
-- Argo CD,
-- Ingress-Nginx Controller,
-- Prometheus,
-- Grafana,
-- Grafana Loki,
-- Trivy Operator,
-- and more.
+improving networking, deployment, monitoring, security, and more.
 
 The configuration is defined in the [`cluster-tools`](./cluster-tools) directory.
 
 This action requires the cluster tools installer credentials.
 
+### Installing Nginx Ingress Controller
+
 ```bash
-cluster_tools_installer_credentials="
-  -var cluster_endpoint=$(cat cluster-endpoint.txt)
-  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
-"
-
-name=loki
-terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
-
-name=promtail
-terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
-
 name=ingress-nginx
 terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
-
-name=kube-prometheus-stack
-terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
-
-name=argo-cd
-terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
-
-name=trivy-operator
-terraform -chdir=cluster-tools/$name init
-TF_LOG=INFO terraform -chdir=cluster-tools/$name apply $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/$name apply $(cat cluster-tools-installer.credentials) -auto-approve
 ```
 
-During the installation,
-you can execute each of the following commands in a new tab in your terminal to watch the pods start up:
+### Installing Argo CD
 
-- `watch -n 1 kubectl --context janeops get pods --namespace argocd`
-- `watch -n 1 kubectl --context janeops get pods --namespace ingress`
-- `watch -n 1 kubectl --context janeops get pods --namespace monitoring`
-- `watch -n 1 kubectl --context janeops get pods --namespace trivy`
+```bash
+name=argo-cd
+terraform -chdir=cluster-tools/$name init
+terraform -chdir=cluster-tools/$name apply $(cat cluster-tools-installer.credentials) -auto-approve
+```
+
+### Installing Grafana Loki
+
+```bash
+name=loki
+terraform -chdir=cluster-tools/$name init
+terraform -chdir=cluster-tools/$name apply $(cat cluster-tools-installer.credentials) -auto-approve
+```
+
+### Installing Promtail Agent
+
+```bash
+name=promtail
+terraform -chdir=cluster-tools/$name init
+terraform -chdir=cluster-tools/$name apply $(cat cluster-tools-installer.credentials) -auto-approve
+```
+
+### Installing Kube Prometheus Stack
+
+```bash
+name=kube-prometheus-stack
+terraform -chdir=cluster-tools/$name init
+terraform -chdir=cluster-tools/$name apply $(cat cluster-tools-installer.credentials) -auto-approve
+```
+
+### Installing Trivy Operator
+
+```bash
+name=trivy-operator
+terraform -chdir=cluster-tools/$name init
+terraform -chdir=cluster-tools/$name apply $(cat cluster-tools-installer.credentials) -auto-approve
+```
 
 ### Retrieving Argo CD admin password
 
@@ -319,40 +336,38 @@ terraform -chdir=cluster-tools/argo-cd output -raw admin_password > argocd-admin
 terraform -chdir=cluster-tools/kube-prometheus-stack output -raw grafana_admin_password > grafana-admin.password
 ```
 
-### Logging in to Argo CD with its CLI tool
+### Argo CD CLI login
 
 ```bash
-argocd_admin_credentials="
-  --username admin
-  --password $(cat argocd-admin.password)
-"
-
-argocd login --grpc-web --insecure argocd.localhost $argocd_admin_credentials
+argocd login --grpc-web --insecure argocd.localhost --username admin --password $(cat argocd-admin.password)
 ```
 
-### Accessing Argo CD in your browser
+### Accessing Argo CD
 
 - [http://argocd.localhost](http://argocd.localhost)
 - Username: `admin`
-- The password is stored in the `argocd-admin.password` file
+- The password is stored in the file: `argocd-admin.password`
 
 <!-- COMMAND nohup xdg-open http://argocd.localhost > /dev/null 2>&1 -->
 <!-- COMMAND echo argocd-admin.password -->
 
-### Accessing Prometheus in your browser
+### Accessing Prometheus
 
 - [http://prometheus.localhost](http://prometheus.localhost)
 
 <!-- COMMAND nohup xdg-open http://prometheus.localhost > /dev/null 2>&1 -->
 
-### Accessing Grafana in your browser
+### Accessing Grafana
 
 - [http://grafana.localhost](http://grafana.localhost)
 - Username: `admin`
-- The password is stored in the `grafana-admin.password` file
+- The password is stored in the file: `grafana-admin.password`
 
 <!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
 <!-- COMMAND echo grafana-admin.password -->
+
+<!-- END cluster-tools -->
+<!-- BEGIN deploy -->
 
 ## 6. Application Deployments
 
@@ -371,6 +386,8 @@ The deployment configuration of the applications reside in the [`deploy`](./depl
 
 Argo CD watches the deployment configurations to deploy and synchronize changes onto the cluster.
 
+<!-- BEGIN hello-world -->
+
 ### Hello World
 
 The Hello World application is a simple web application that displays a greeting message.
@@ -385,8 +402,6 @@ The application is composed by the following resources:
 - 1 `Ingress` with configurable host and path targeting the service
 - 1 `ConfigMap` to configure the greeting message
 
-#### Deploying Hello World
-
 We'll use the Argo CD `ApplicationSet` resource to generate 3 Hello World applications,
 one for each environment (development, staging, and production).
 
@@ -394,91 +409,89 @@ Each application is configured to display a unique message,
 accessible via a distinct URL,
 and deployed with a different number of replicas.
 
-| Application   | Namespace     | Replicas | URL                          | Message            |
-| ------------- | ------------- | -------- | ---------------------------- | ------------------ |
-| `hello-dev`   | `development` | `2`      | `http://dev.localhost/hello` | `Hello, Devs!`     |
-| `hello-qa`    | `staging`     | `4`      | `http://stg.localhost/hello` | `Hello, QA Folks!` |
-| `hello-world` | `production`  | `8`      | `http://hello.localhost`     | `Hello, World!`    |
+| Application      | Namespace     | Replicas | URL                              | Message            |
+| ---------------- | ------------- | -------- | -------------------------------- | ------------------ |
+| `hello-devs`     | `development` | `2`      | `http://dev.localhost/hello`     | `Hello, Devs!`     |
+| `hello-qa-folks` | `staging`     | `4`      | `http://staging.hello.localhost` | `Hello, QA Folks!` |
+| `hello-society`  | `production`  | `8`      | `http://hello.localhost`         | `Hello, Society!`  |
 
 You can change this configuration by editing the
 [`deploy/hello-world/argocd-application-set.yaml`](./deploy/hello-world/argocd-application-set.yaml)
 file.
 
+#### Deploying Hello World
+
 This action requires the Argo CD application deployer credentials.
 
 ```bash
-argocd_application_deployer_credentials="
-  --server=$(cat cluster-endpoint.txt)
-  --certificate-authority=$(realpath cluster-ca.crt)
-  --token=$(cat argocd-application-deployer.token)
-"
-
-kubectl $argocd_application_deployer_credentials \
+kubectl $(cat argocd-application-deployer.credentials) \
 apply \
 --namespace argocd \
 --filename deploy/hello-world/argocd-application-set.yaml
 ```
 
-#### Waiting Hello World synchronization
+#### Waiting synchronization
 
 ```bash
-argocd app wait hello-world-dev
-argocd app wait hello-world-stg
-argocd app wait hello-world-prd
+argocd app wait --selector appset=hello-world
 ```
 
-#### Waiting Hello World health
+#### Health check
 
 The Hello World application exposes a `/healthz` endpoint,
-which serves as a health check interface.
+which serves as a health check interface:
+
+- [`http://dev.localhost/hello/healthz`](http://dev.localhost/hello/healthz)
+- [`http://staging.hello.localhost/healthz`](http://staging.hello.localhost/healthz)
+- [`http://hello.localhost/healthz`](http://hello.localhost/healthz)
 
 We'll await the return of a `200` HTTP status code from this endpoint.
 
 ```bash
-urls="
-http://dev.localhost/hello/healthz
-http://stg.localhost/hello/healthz
-http://hello.localhost/healthz
-"
-max_retries=3
-retry_interval_seconds=10
+urls="http://dev.localhost/hello/healthz
+http://staging.hello.localhost/healthz
+http://hello.localhost/healthz"
+
 for url in $urls; do
   retries=0
   until [ "$(curl -s -o /dev/null -w '%{http_code}' $url)" = "200" ]; do
     ((++retries));
-    if [ $retries -ge $max_retries ]; then exit 1
-    else sleep $retry_interval_seconds; fi
+    if [ $retries -ge 3 ]; then exit 1
+    else sleep 10; fi
   done
 done
 ```
 
-#### Interacting with Hello World
+#### Accessing the application
 
 Open in your browser:
 
-- http://dev.localhost/hello
-- http://stg.localhost/hello/
-- http://hello.localhost
+- [`http://dev.localhost/hello`](http://dev.localhost/hello)
+- [`http://staging.hello.localhost`](http://staging.hello.localhost)
+- [`http://hello.localhost`](http://hello.localhost)
 
-You can also interact with Hello World applications using `curl`:
+You can also interact using `curl`:
 
 ```bash
 curl http://dev.localhost/hello
-curl http://stg.localhost/hello/
+curl http://staging.hello.localhost
 curl http://hello.localhost
 ```
 
+<!-- END hello-world -->
+<!-- BEGIN crudify -->
+
 ### CRUDify
 
-CRUDify is a CRUD (Create, Read, Update, Delete) application written in Python.
+CRUDify is a CRUD application written in Python.
 
-CRUDify manages `items`.
+This application manages `items`.
+
+The API exposes four endpoints, allowing clients to `create`, `read`, `update`, and `delete` items.
 
 An item consists of
 a `name`, provided by the client,
 and an `id`, assigned by the API.
-
-The API exposes four endpoints, allowing clients to `create`, `read`, `update`, and `delete` items.
 
 Items are uniquely identified by their `id`.
 
@@ -489,13 +502,13 @@ Unlike a monolithic application,
 CRUDify is designed to explore with a microservices architecture,
 being composed of multiple resources:
 
-- 4 `services` for the API
-- 4 `deployments` - one deployment for each API service
-- 1 `ingress` with 4 paths - one path for each API service
-- 1 `statefulset`, 1 `service`, and 1 `secret` for MongoDB to store the items
-- 4 `cronjobs` to simulate the clients - one client for each API service
-- 4 `servicemonitors` for Prometheus scraping - one service monitor for each API service
-- 1 `config-map` for Grafana dashboards
+- 4 `services` for the API.
+- 4 `deployments` - one deployment for each API service.
+- 1 `ingress` with 4 paths - one path for each API service.
+- 1 `statefulset`, 1 `service`, and 1 `secret` for MongoDB to store the items.
+- 4 `cronjobs` to simulate the clients - one client for each API service.
+- 4 `servicemonitors` for Prometheus scraping - one service monitor for each API service.
+- 1 `configmap` for Grafana dashboards.
 
 API services:
 
@@ -506,13 +519,16 @@ API services:
 
 The API will be accessible at `http://crud.localhost/api`.
 
-An ingress resource is configured to ensure that incoming traffic directed to `http://crud.localhost/api/<service>` is routed to the corresponding service.
+The ingress resource is configured to ensure that incoming traffic directed to `http://crud.localhost/api/<service>` is routed to the corresponding service.
 
-The services receive a client request via ingress routing,
-perform the requested operation in the database,
+When a service receives a client request via ingress routing,
+it forwards the request to one of its target pods,
+which perform the requested operation in the database,
 generate relevant information in the logs,
 update the application metrics,
 and return a response to the client.
+
+
 
 Four client applications simulate real users:
 
@@ -533,13 +549,7 @@ We'll use the Argo CD `Application` resource.
 This action requires the Argo CD application deployer credentials.
 
 ```bash
-argocd_application_deployer_credentials="
-  --server=$(cat cluster-endpoint.txt)
-  --certificate-authority=$(realpath cluster-ca.crt)
-  --token=$(cat argocd-application-deployer.token)
-"
-
-kubectl $argocd_application_deployer_credentials \
+kubectl $(cat argocd-application-deployer.credentials) \
 apply \
 --namespace argocd \
 --filename deploy/crudify/argocd-application.yaml
@@ -671,12 +681,18 @@ Other examples:
 
 - http://grafana.localhost/d/crudify
 
-<!-- FUNCTION down -->
+<!-- END crudify -->
+<!-- END deploy -->
+<!-- END up -->
+<!-- BEGIN down -->
+
 ## 7. Cleanup and Tear Down
 
 This step involves deleting all resources in the cluster,
 which includes undeploying applications, uninstalling cluster tools, and removing RBAC and namespace configurations.
 Finally, the cluster itself is destroyed.
+
+<!-- BEGIN undeploy -->
 
 ### Undeploying applications
 
@@ -688,49 +704,35 @@ argocd appset delete hello-world --yes
 argocd app delete crudify --yes
 ```
 
+<!-- END undeploy -->
+
 ### Uninstalling cluster tools
 
 ```bash
-cluster_tools_installer_credentials="
-  -var cluster_endpoint=$(cat cluster-endpoint.txt)
-  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var cluster_tools_installer_token=$(realpath cluster-tools-installer.token)
-"
-
-terraform -chdir=cluster-tools/trivy-operator destroy $cluster_tools_installer_credentials -auto-approve
-terraform -chdir=cluster-tools/argo-cd destroy $cluster_tools_installer_credentials -auto-approve
-terraform -chdir=cluster-tools/kube-prometheus-stack destroy $cluster_tools_installer_credentials -auto-approve
-terraform -chdir=cluster-tools/ingress-nginx destroy $cluster_tools_installer_credentials -auto-approve
-terraform -chdir=cluster-tools/promtail destroy $cluster_tools_installer_credentials -auto-approve
-terraform -chdir=cluster-tools/loki destroy $cluster_tools_installer_credentials -auto-approve
+terraform -chdir=cluster-tools/trivy-operator destroy $(cat cluster-tools-installer.credentials) -auto-approve
+terraform -chdir=cluster-tools/argo-cd destroy $(cat cluster-tools-installer.credentials) -auto-approve
+terraform -chdir=cluster-tools/kube-prometheus-stack destroy $(cat cluster-tools-installer.credentials) -auto-approve
+terraform -chdir=cluster-tools/ingress-nginx destroy $(cat cluster-tools-installer.credentials) -auto-approve
+terraform -chdir=cluster-tools/promtail destroy $(cat cluster-tools-installer.credentials) -auto-approve
+terraform -chdir=cluster-tools/loki destroy $(cat cluster-tools-installer.credentials) -auto-approve
 ```
 
 ### Removing RBAC and namespace configurations
 
 ```bash
-# TODO revoke user certificates?
+# Destroy namespace-configs
+terraform -chdir=namespace-configs destroy $(cat namespace-manager.credentials) -auto-approve
 
-# Removing namespace-level configurations
-namespace_manager_credentials="
-  -var cluster_endpoint=$(cat cluster-endpoint.txt)
-  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var namespace_manager_token=$(realpath namespace-manager.token)
-"
-terraform -chdir=namespace-configs destroy $namespace_manager_credentials -auto-approve
-
-# Removing cluster-level RBAC resources
-root_user_credentials="
-  -var cluster_endpoint=$(cat cluster-endpoint.txt)
-  -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var root_user_key=$(realpath root.key)
-  -var root_user_certificate=$(realpath root.crt)
-"
-terraform -chdir=cluster-operators destroy $root_user_credentials -auto-approve
+# Destroy cluster-operators
+terraform -chdir=cluster-operators destroy $(cat root-user.credentials) -auto-approve
 ```
+
+<!-- BEGIN destroy -->
 
 ### Destroying cluster
 
 ```bash
+# Destroy local-cluster
 terraform -chdir=local-cluster destroy -auto-approve
 ```
 
@@ -758,3 +760,6 @@ done
 
 git clean -Xf
 ```
+
+<!-- END destroy -->
+<!-- END down -->

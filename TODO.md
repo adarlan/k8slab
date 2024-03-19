@@ -1,6 +1,18 @@
 # TODO
 
-create Pod crudify-mongodb-0 in StatefulSet crudify-mongodb failed error: pods "crudify-mongodb-0" is forbidden: exceeded quota: crudify, requested: limits.cpu=500m,requests.memory=512Mi, used: limits.cpu=1500m,requests.memory=384Mi, limited: limits.cpu=1500m,requests.memory=512Mi
+# cluster-tools
+
+Watch pods:
+- `watch -n 1 kubectl --context janeops get pods --namespace ingress`
+
+Watch pods:
+- `watch -n 1 kubectl --context janeops get pods --namespace argocd`
+
+Watch pods:
+- `watch -n 1 kubectl --context janeops get pods --namespace monitoring`
+
+Watch pods:
+- `watch -n 1 kubectl --context janeops get pods --namespace trivy`
 
 ## rbac
 
