@@ -1,3 +1,20 @@
+# TODO separate roles from namespace definitions
+# roles:
+# - name: application-deployer
+#   namespace: argocd
+#   permissions:
+#   - accessMode: readwrite
+#     apiGroup: ""
+#     resources:
+#     - secrets
+#   - accessMode: readwrite
+#     apiGroup: argoproj.io
+#     resources:
+#     - applications
+#     - applicationsets
+#   serviceAccounts:
+#   - application-deployer
+
 namespaces:
 
 - name: argocd
@@ -22,12 +39,12 @@ namespaces:
   #   requests.memory: 256Mi
   #   limits.memory: 1Gi
 
-- name: hello-world-dev
+- name: development
   roles:
   - name: developer
     permissions:
     - accessMode: readwrite
-      apiGroup: core
+      apiGroup: ""
       resources: ["pods", "services"]
     - accessMode: readwrite
       apiGroup: apps
@@ -36,34 +53,34 @@ namespaces:
     - John Dev
   hardResourceQuota:
     pods: "5"
-    requests.cpu: "0.05"
-    limits.cpu: "0.2"
+    requests.cpu: 50m
     requests.memory: 128Mi
+    limits.cpu: 250m
     limits.memory: 512Mi
 
-- name: hello-world-stg
+- name: staging
   hardResourceQuota:
     pods: "10"
-    requests.cpu: "0.1"
-    limits.cpu: "0.4"
-    requests.memory: 128Mi
-    limits.memory: 512Mi
-
-- name: hello-world-prd
-  hardResourceQuota:
-    pods: "15"
-    requests.cpu: "0.15"
-    limits.cpu: "0.6"
-    requests.memory: 128Mi
+    requests.cpu: 100m
+    requests.memory: 256Mi
+    limits.cpu: 500m
     limits.memory: 1Gi
+
+- name: production
+  hardResourceQuota:
+    pods: "20"
+    requests.cpu: 200m
+    requests.memory: 512Mi
+    limits.cpu: 1000m
+    limits.memory: 2Gi
 
 - name: crudify
   hardResourceQuota:
     pods: "50"
-    requests.cpu: "0.5"
-    limits.cpu: "1.5"
+    requests.cpu: 500m
+    limits.cpu:   2000m
     requests.memory: 512Mi
-    limits.memory: 2Gi
+    limits.memory:   2Gi
 
 - name: monitoring
   # hardResourceQuota:
