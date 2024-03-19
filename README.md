@@ -24,6 +24,14 @@ This simulation includes:
 - [Grafana](https://grafana.com/grafana/) for dashboard visualization
 - [Grafana Loki](https://grafana.com/oss/loki/) for log aggregation
 
+### Example Applications
+
+To explore with the cluster features,
+we will deploy two example applications:
+
+- Hello World: A simple web application that displays a greeting message and will be deployed across multiple environments with distinct configuration.
+- CRUDify: A microservice-based CRUD application composed by multiple services and clients designed to experiment with the cluster's capabilities.
+
 ### Requirements
 
 - Docker Engine
@@ -31,17 +39,17 @@ This simulation includes:
 - Kubernetes CLI (`kubectl`)
 - Argo CD CLI (`argocd`)
 
-The required versions of the CLI tools are defined in the [`.tool-versions`](./.tool-versions) file.
+The recommended versions of the CLI tools are defined in the [`.tool-versions`](./.tool-versions) file.
 
 ### Simulation Steps
 
-Run the simulation by following these steps:
+Run the simulation by following the step-by-step guide below.
 
-
-To execute these steps automatically, use the [`run.sh`](./run.sh) script:
+To execute the steps automatically,
+use the [`run.sh`](./run.sh) script:
 
 - `./run.sh up` to run all steps from cluster provisioning to application deployment.
-- `./run.sh down` to run the cleanup and tear down step.
+- `./run.sh down` to remove resources and destroy the cluster.
 
 <!-- BEGIN up -->
 <!-- BEGIN local-cluster -->
