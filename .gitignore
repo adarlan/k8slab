@@ -1,12 +1,11 @@
 script.sh
-*.script.sh
 
 *.key
 *.csr
-*-csr.yaml
 *.crt
 *.token
 *-endpoint.txt
 *.password
+*.credentials
 
 nohup.out
