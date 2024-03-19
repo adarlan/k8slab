@@ -1,6 +1,8 @@
 userRoles:
+
 - name: cluster-administrator
   permissions:
+    # TODO remove write permission for namespaces, resourcequotas, limitranges, serviceaccounts?, roles, rolebindings, clusterroles, clusterrolebindings
   - apiGroup: "*"
     resources: ["*"]
     accessMode: readwrite
@@ -8,12 +10,8 @@ userRoles:
   - Jane Ops
 
 serviceAccounts:
-- name: cluster-tools-installer
-  permissions:
-  - apiGroup: "*"
-    resources: ["*"]
-    accessMode: readwrite
-- name: namespace-manager
+
+- name: namespace-provisioner
   permissions:
   - accessMode: readwrite
     apiGroup: ""
@@ -21,6 +19,16 @@ serviceAccounts:
     - namespaces
     - resourcequotas
     - limitranges
+
+- name: namespace-rbac-manager
+  permissions:
+  - accessMode: readonly
+    apiGroup: ""
+    resources:
+    - namespaces
+  - accessMode: readwrite
+    apiGroup: ""
+    resources:
     - serviceaccounts
     - secrets
   - accessMode: readwrite
@@ -28,3 +36,10 @@ serviceAccounts:
     resources:
     - roles
     - rolebindings
+
+- name: cluster-tools-installer
+  permissions:
+    # Note: it needs full access to install argocd
+  - apiGroup: "*"
+    resources: ["*"]
+    accessMode: readwrite
