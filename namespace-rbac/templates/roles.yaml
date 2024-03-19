@@ -2,13 +2,6 @@
 {{ range .Values.namespaces }}
 {{ $namespaceName := .name }}
 {{ $roles := .roles }}
-{{ $hardResourceQuota := .hardResourceQuota }}
-
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ $namespaceName }}
 
 # <namespace.roles>
 {{ range $roles }}
@@ -94,20 +87,6 @@ metadata:
 
 {{ end }}
 # </namespace.roles>
-
-# <hardResourceQuota>
-{{ if $hardResourceQuota }}
----
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: {{ $namespaceName }}
-  namespace: {{ $namespaceName }}
-spec:
-  hard:
-{{ toYaml $hardResourceQuota | indent 4 }}
-{{ end }}
-# </hardResourceQuota>
 
 {{ end }}
 # </namespaces>

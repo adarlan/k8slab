@@ -1,37 +1,6 @@
-# TODO separate roles from namespace definitions
-# roles:
-# - name: application-deployer
-#   namespace: argocd
-#   permissions:
-#   - accessMode: readwrite
-#     apiGroup: ""
-#     resources:
-#     - secrets
-#   - accessMode: readwrite
-#     apiGroup: argoproj.io
-#     resources:
-#     - applications
-#     - applicationsets
-#   serviceAccounts:
-#   - application-deployer
-
 namespaces:
 
 - name: argocd
-  roles:
-  - name: application-deployer
-    permissions:
-    - accessMode: readwrite
-      apiGroup: ""
-      resources:
-      - secrets
-    - accessMode: readwrite
-      apiGroup: argoproj.io
-      resources:
-      - applications
-      - applicationsets
-    serviceAccounts:
-    - application-deployer
   # hardResourceQuota:
   #   pods: "10"
   #   requests.cpu: "0.25"
@@ -40,17 +9,6 @@ namespaces:
   #   limits.memory: 1Gi
 
 - name: development
-  roles:
-  - name: developer
-    permissions:
-    - accessMode: readwrite
-      apiGroup: ""
-      resources: ["pods", "services"]
-    - accessMode: readwrite
-      apiGroup: apps
-      resources: ["deployments"]
-    users:
-    - John Dev
   hardResourceQuota:
     pods: "5"
     requests.cpu: 50m

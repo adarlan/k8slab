@@ -8,7 +8,7 @@ variable "cluster_ca_certificate" {
   sensitive = true
 }
 
-variable "namespace_manager_token" {
+variable "namespace_rbac_manager_token" {
   type      = string
   sensitive = true
 }

@@ -1,0 +1,18 @@
+{{ range .Values.namespaces }}
+
+{{ $namespaceName := .name }}
+{{ $hardResourceQuota := .hardResourceQuota }}
+
+{{ if $hardResourceQuota }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ $namespaceName }}
+  namespace: {{ $namespaceName }}
+spec:
+  hard:
+{{ toYaml $hardResourceQuota | indent 4 }}
+
+{{ end }}
+{{ end }}

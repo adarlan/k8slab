@@ -1,0 +1,37 @@
+# TODO
+# roles:
+# - name: application-deployer
+#   namespace: argocd
+#   permissions:
+# ...
+
+namespaces:
+
+- name: argocd
+  roles:
+  - name: application-deployer
+    permissions:
+    - accessMode: readwrite
+      apiGroup: ""
+      resources:
+      - secrets
+    - accessMode: readwrite
+      apiGroup: argoproj.io
+      resources:
+      - applications
+      - applicationsets
+    serviceAccounts:
+    - application-deployer
+
+- name: development
+  roles:
+  - name: developer
+    permissions:
+    - accessMode: readwrite
+      apiGroup: ""
+      resources: ["pods", "services"]
+    - accessMode: readwrite
+      apiGroup: apps
+      resources: ["deployments"]
+    users:
+    - John Dev
