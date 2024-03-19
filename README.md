@@ -1,69 +1,52 @@
 # K8sLab
 
-A project intended for exploring and piloting a local [Kubernetes](https://kubernetes.io/) cluster
+A project intended for exploring with a local [Kubernetes](https://kubernetes.io/) cluster
 bundled with popular open-source tools and example applications,
 simulating a real environment.
 
 This simulation includes:
 
+1. Cluster Provisioning
+2. Cluster-Level RBAC
+3. Namespace Provisioning
+4. Namespace-Level RBAC
+5. Cluster Toolkit Installation
+6. Application Deployment
+
+### Features
+
 - [Terraform](https://www.terraform.io/) for resource provisioning
-- [Helm](https://helm.sh/) for package management
+- [Helm](https://helm.sh/) for manifest files generation
 - [Kustomize](https://kustomize.io/) for deployment configuration
 - [Argo CD](https://argoproj.github.io/cd/) for continuous deployment
-- [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
+- [Ingress-Nginx Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
 - [Prometheus](https://prometheus.io/) for metrics and alerts
 - [Grafana](https://grafana.com/grafana/) for dashboard visualization
 - [Grafana Loki](https://grafana.com/oss/loki/) for log aggregation
-- [Trivy Operator](https://aquasecurity.github.io/trivy-operator) for continuous security scan
+
+### Requirements
+
+- Docker Engine
+- Terraform CLI (`terraform`)
+- Kubernetes CLI (`kubectl`)
+- Argo CD CLI (`argocd`)
+
+The required versions of the CLI tools are defined in the [`.tool-versions`](./.tool-versions) file.
+
+### Simulation Steps
 
 Run the simulation by following these steps:
 
-1. CLI Tools Installation
-2. Cluster Provisioning
-3. Cluster-Level RBAC
-4. Namespace-Level RBAC & Resource Management
-5. Cluster Tools Installation
-6. Application Deployments
-7. Cleanup and Tear Down
 
 To execute these steps automatically, use the [`run.sh`](./run.sh) script:
 
-- `./run.sh up`
-- `./run.sh down`
+- `./run.sh up` to run all steps from cluster provisioning to application deployment.
+- `./run.sh down` to run the cleanup and tear down step.
 
 <!-- BEGIN up -->
-<!-- BEGIN tool-versions -->
-
-## 1. CLI Tools Installation
-
-This step involves installing the necessary command-line interface (CLI) tools required for managing and interacting with your local Kubernetes environment.
-
-CLI tools:
-
-- `terraform`
-- `kubectl`
-- `helm`
-- `argocd`
-
-The required versions of these tools are defined in the [`.tool-versions`](./.tool-versions) file.
-
-You can use the [asdf](https://asdf-vm.com/) version manager to install these tools:
-
-```bash
-# Add asdf plugins
-asdf plugin add terraform
-asdf plugin add kubectl
-asdf plugin add helm
-asdf plugin add argocd
-
-# Install tools defined in .tool-versions
-while IFS= read -r tool_version; do asdf install $tool_version; done < .tool-versions
-```
-
-<!-- END tool-versions -->
 <!-- BEGIN local-cluster -->
 
-## 2. Cluster Provisioning
+## 1. Cluster Provisioning
 
 This step involves creating the Kubernetes cluster itself.
 
