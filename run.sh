@@ -3,18 +3,31 @@ set -e
 
 shellOptions="-ex"
 
-[ $# -eq 1 ] && function="$1" || function="__main__"
+# [ $# -eq 1 ] && function="$1" || function="__main__"
+
+if [ $# -eq 1 ]; then
+    target=$1
+    target_status=off
+else
+    echo "Usage:"
+    while IFS= read -r line; do
+        if [[ $line =~ ^\<\!\-\-\ BEGIN\ (.*)\ \-\-\>$ ]]; then
+            option="${BASH_REMATCH[1]}"
+            echo "  ./run.sh $option"
+        fi
+    done < "README.md"
+fi
 
 echo '#/bin/bash' > script.sh
 echo 'set -e' >> script.sh
 echo 'echo' >> script.sh
 chmod +x script.sh
 
-functionName="__main__"
-echo "$functionName() {" >> script.sh
-echo ":" >> script.sh
+# functionName="__main__"
+# echo "$functionName() {" >> script.sh
+# echo ":" >> script.sh
 
-isCommand="false"
+is_inside_script_block="false"
 
 printf_title=""
 press_enter_to_continue="false"
@@ -28,41 +41,54 @@ add_title() {
 }
 
 while IFS= read -r line; do
-    if [ "$isCommand" = "true" ]; then
 
+    # Is inside of a script block
+    if [ "$is_inside_script_block" = "true" ]; then
+
+        # Script block end (line=```)
         if [ "$line" = "\`\`\`" ]; then
-            # CODE BLOCK END
-            isCommand="false"
+            is_inside_script_block="false"
             echo ")" >> script.sh
             echo "echo" >> script.sh
 
+        # Script line
         else
-            # CODE LINE
             echo "$line" >> script.sh
         fi
+
+    # Is outside of a script block
     else
-        if [ "$line" = "\`\`\`bash" ]; then
-            # CODE BLOCK START
+
+        # Script block begin (line=```bash)
+        if [ "$line" = "\`\`\`bash" ] && [ "$target_status" = "on" ]; then
             add_title
-            isCommand="true"
+            is_inside_script_block="true"
             echo "(" >> script.sh
             echo "set $shellOptions" >> script.sh
-        
+
+        # Title
         elif [[ "$line" == \#* ]]; then
-            # TITLE
             if [[ $line =~ ^\#\#\ .*$ ]]; then
                 press_enter_to_continue="true"
             fi
             printf_title="printf \"\\e[1;34m$line\\e[0m\\n\""
 
-        elif [[ $line =~ ^\<\!\-\-\ FUNCTION\ ([a-z_]+)\ \-\-\>$ ]]; then
-            # FUNCTION
-            functionName="${BASH_REMATCH[1]}"
-            echo "}" >> script.sh
-            echo "$functionName() {" >> script.sh
+        # <!-- BEGIN target -->
+        elif [[ $line =~ ^\<\!\-\-\ BEGIN\ $target\ \-\-\>$ ]]; then
+            target_status=on
 
-        elif [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]]; then
-            # COMMAND
+        # <!-- END target -->
+        elif [[ $line =~ ^\<\!\-\-\ END\ $target\ \-\-\>$ ]]; then
+            target_status=off
+
+        # elif [[ $line =~ ^\<\!\-\-\ FUNCTION\ ([a-z_]+)\ \-\-\>$ ]]; then
+        #     # FUNCTION
+        #     functionName="${BASH_REMATCH[1]}"
+        #     echo "}" >> script.sh
+        #     echo "$functionName() {" >> script.sh
+
+        # <!-- COMMAND command -->
+        elif [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]] && [ "$target_status" = "on" ]; then
             add_title
             command="${BASH_REMATCH[1]}"
             echo "(" >> script.sh
@@ -71,20 +97,19 @@ while IFS= read -r line; do
             echo ")" >> script.sh
             echo "echo" >> script.sh
 
-        elif [[ $line =~ ^\<\!\-\-\ CONFIG\ ([a-zA-Z]+)\:\ (.*)\ \-\-\>$ ]]; then
-            # CONFIG
-            parameterName="${BASH_REMATCH[1]}"
-            parameterValue="${BASH_REMATCH[2]}"
-            # echo "parameterName: $parameterName"
-            # echo "parameterValue: $parameterValue"
-            eval "$parameterName=\"$parameterValue\""
-            # echo "${!parameterName}"
+        # elif [[ $line =~ ^\<\!\-\-\ CONFIG\ ([a-zA-Z]+)\:\ (.*)\ \-\-\>$ ]]; then
+        #     # CONFIG
+        #     parameterName="${BASH_REMATCH[1]}"
+        #     parameterValue="${BASH_REMATCH[2]}"
+        #     # echo "parameterName: $parameterName"
+        #     # echo "parameterValue: $parameterValue"
+        #     eval "$parameterName=\"$parameterValue\""
+        #     # echo "${!parameterName}"
         fi
     fi
 done < "README.md"
 
-echo "}" >> script.sh
-
-echo "$function" >> script.sh
+# echo "}" >> script.sh
+# echo "$function" >> script.sh
 
 bash script.sh
