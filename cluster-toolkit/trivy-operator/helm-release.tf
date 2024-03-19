@@ -3,7 +3,6 @@ resource "helm_release" "trivy_operator" {
   name = "trivy-operator"
 
   namespace        = "trivy"
-  create_namespace = false
 
   repository = "https://aquasecurity.github.io/helm-charts"
   chart      = "trivy-operator"

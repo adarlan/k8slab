@@ -4,7 +4,6 @@ resource "helm_release" "namespace_rbac" {
   chart = path.module
 
   namespace        = "namespace-rbac"
-  create_namespace = true
 
   values = [
     file("${path.module}/values.yaml")
