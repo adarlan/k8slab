@@ -1,29 +1,29 @@
-data "kubernetes_secret" "namespace_provisioner" {
+data "kubernetes_secret" "namespace_provisioning" {
 
   depends_on = [helm_release.cluster_rbac]
 
   metadata {
-    name      = "namespace-provisioner"
-    namespace = "namespace-provisioner"
+    name      = "namespace-provisioning"
+    namespace = "namespace-provisioning"
   }
 }
 
-data "kubernetes_secret" "namespace_rbac_manager" {
+data "kubernetes_secret" "namespace_rbac" {
 
   depends_on = [helm_release.cluster_rbac]
 
   metadata {
-    name      = "namespace-rbac-manager"
-    namespace = "namespace-rbac-manager"
+    name      = "namespace-rbac"
+    namespace = "namespace-rbac"
   }
 }
 
-data "kubernetes_secret" "cluster_tools_installer" {
+data "kubernetes_secret" "cluster_tools" {
 
   depends_on = [helm_release.cluster_rbac]
 
   metadata {
-    name      = "cluster-tools-installer"
-    namespace = "cluster-tools-installer"
+    name      = "cluster-tools"
+    namespace = "cluster-tools"
   }
 }

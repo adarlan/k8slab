@@ -11,7 +11,7 @@ userRoles:
 
 serviceAccounts:
 
-- name: namespace-provisioner
+- name: namespace-provisioning
   permissions:
   - accessMode: readwrite
     apiGroup: ""
@@ -20,7 +20,7 @@ serviceAccounts:
     - resourcequotas
     - limitranges
 
-- name: namespace-rbac-manager
+- name: namespace-rbac
   permissions:
   - accessMode: readonly
     apiGroup: ""
@@ -37,7 +37,7 @@ serviceAccounts:
     - roles
     - rolebindings
 
-- name: cluster-tools-installer
+- name: cluster-tools
   permissions:
     # Note: it needs full access to install argocd
   - apiGroup: "*"
