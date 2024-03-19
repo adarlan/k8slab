@@ -1,75 +1,68 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
-
 metadata:
   name: hello-world
   namespace: argocd
-
 spec:
   generators:
   - list:
       elements:
 
-      - environment: production
-        greetingMessage: Hello, Users!
-        appName: hello-world-prd
-        targetRevision: master
-        destinationCluster: in-cluster
-        destinationNamespace: production
-        route: hello.localhost
-        replicas: "8"
-
-      - environment: staging
-        greetingMessage: Hello, QA Folks!
-        appName: hello-world-stg
-        targetRevision: master
-        destinationCluster: in-cluster
-        destinationNamespace: staging
-        route: stg.localhost/hello/
-        replicas: "4"
-
-      - environment: development
+      - namespace: development
         greetingMessage: Hello, Devs!
-        appName: hello-world-dev
-        targetRevision: master
-        destinationCluster: in-cluster
-        destinationNamespace: development
-        route: dev.localhost/hello
+        app: hello-devs
+        ingressHost: dev.localhost
+        ingressPath: /hello
         replicas: "2"
+        targetRevision: master
+        # TODO imageTag: develop
+
+      - namespace: staging
+        greetingMessage: Hello, QA Folks!
+        app: hello-qa-folks
+        ingressHost: staging.hello.localhost
+        ingressPath: ""
+        replicas: "4"
+        targetRevision: master
+        # TODO => targetRevision: v1.5.0
+
+      - namespace: production
+        greetingMessage: Hello, Society!
+        app: hello-society
+        ingressHost: hello.localhost
+        ingressPath: ""
+        replicas: "8"
+        targetRevision: master
+        # TODO => targetRevision: v1.4.0
 
   template:
     metadata:
-      name: "{{appName}}"
+      name: "{{app}}"
       namespace: argocd
       labels:
-        app: "{{appName}}"
-        selection: application-sets
+        app: "{{app}}"
+        appset: hello-world
       finalizers:
       - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
-
       source:
         repoURL: https://github.com/adarlan/k8slab.git
         path: deploy/hello-world
         targetRevision: "{{targetRevision}}"
         helm:
-          releaseName: "{{appName}}"
+          releaseName: "{{app}}"
           valuesObject:
-            environment: "{{environment}}"
             greetingMessage: "{{greetingMessage}}"
-            route: "{{route}}"
             replicas: "{{replicas}}"
             ingress:
               enabled: true
-
+              host: "{{ingressHost}}"
+              path: "{{ingressPath}}"
       destination:
-        name: "{{destinationCluster}}"
-        namespace: "{{destinationNamespace}}"
-
+        name: in-cluster
+        namespace: "{{namespace}}"
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
-        # syncOptions:
-        #   - CreateNamespace=true

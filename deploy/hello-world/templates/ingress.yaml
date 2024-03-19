@@ -3,42 +3,31 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 
-{{- $routeParts := regexSplit "\\/" .Values.route -1 }}
-{{- $host := index $routeParts 0 }}
-{{- $pathParts := slice $routeParts 1 }}
-{{- $pathParts := without $pathParts "/" }}
-{{- $pathParts := without $pathParts "" }}
-{{- $path := join "/" $pathParts }}
-{{- $path := (eq $path "") | ternary "" (printf "/%s" $path) }}
-{{- $route := printf "%s%s" $host $path }}
-
 metadata:
   name: {{ .Release.Name }}
   labels:
     app: {{ .Release.Name }}
 
   annotations:
-    {{ if eq $path "" }}
     nginx.ingress.kubernetes.io/use-regex: "true"
+    {{ if eq .Values.ingress.path "" }}
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     {{ else }}
-    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     {{ end }}
 
 spec:
   rules:
-  - host: {{ $host }}
+  - host: {{ .Values.ingress.host }}
     http:
       paths:
 
-      {{ if eq $path "" }}
       - pathType: ImplementationSpecific
+        {{ if eq .Values.ingress.path "" }}
         path: /(.*)
-      {{ else }}
-      - pathType: ImplementationSpecific
-        path: {{ $path }}(/|$)(.*)
-      {{ end }}
+        {{ else }}
+        path: {{ .Values.ingress.path }}(/|$)(.*)
+        {{ end }}
 
         backend:
           service:
