@@ -1,6 +1,30 @@
 # TODO
 
-# cluster-tools
+## terraform helm_release
+
+Dont use values.yaml.
+Instead, use a terraform.tfvars file.
+Because:
+- Some terraform resources should be generated dinamically
+- If you ubdate the values.yaml file, Terraform does not detect tha change (not sure of this)
+
+## limit-ranges
+
+## trivy
+
+Installing Trivy Operator:
+
+```bash
+name=trivy-operator
+terraform -chdir=cluster-toolkit/$name init
+terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
+```
+
+## run.sh
+
+<!-- IFNOT kubectl --context johndev auth whoami -->
+
+## cluster-toolkit
 
 Watch pods:
 - `watch -n 1 kubectl --context janeops get pods --namespace ingress`
@@ -34,6 +58,8 @@ deleting is responsibility of argocd operators (Peter Argoman?)
 - [Docker Engine](https://docs.docker.com/engine/) for containerization of applications.
 
 ## asdf
+
+The CLI tool versions are explicit in the [`.tool-versions`](./.tool-versions) file.
 
 ```bash
 while IFS= read -r tool_version; do
@@ -304,7 +330,7 @@ kubectl config set-credentials k8slab-root --client-key=root.key --client-certif
 kubectl config set-context k8slab-root --cluster=k8slab --user=k8slab-root
 ```
 
-## cluster-tools
+## cluster-toolkit
 
 These tools can be installed in 3 ways:
 
@@ -326,7 +352,7 @@ as well as setting namespace limit ranges and resource quotas.
 KinD automatically sets up a kubeconfig to access the cluster, but we won't use it.
 Instead, we will set up the kubeconfig from scratch.
 
-## cluster-tools argocd-mode
+## cluster-toolkit argocd-mode
 
 We'll use Terraform to install Argo CD and then use Argo CD to install the other tools.
 
@@ -340,24 +366,24 @@ Terraform will warn "Resource targeting is in effect" and "Applied changes may b
 but for the purposes of this simulation you can ignore these messages.
 
 ```bash
-cluster_tools_installer_credentials_terraform="
+cluster_toolkit_credentials_terraform="
   -var cluster_endpoint=$(cat cluster-endpoint.txt)
   -var cluster_ca_certificate=$(realpath cluster-ca.crt)
-  -var service_account_token=$(realpath cluster-tools-installer.token)
+  -var service_account_token=$(realpath cluster-toolkit.token)
 "
 
-terraform -chdir=cluster-tools init
+terraform -chdir=cluster-toolkit init
 
 TF_LOG=INFO \
-terraform -chdir=cluster-tools \
-apply $cluster_tools_installer_credentials_terraform \
+terraform -chdir=cluster-toolkit \
+apply $cluster_toolkit_credentials_terraform \
 -auto-approve \
 -parallelism=1 \
 -target=helm_release.argocd_stack
 ```
 
 ```bash
-# Uninstalling cluster tools that were installed with argocd
+# Uninstalling cluster toolkit that were installed with argocd
 kubectl --server=$(cat cluster-endpoint.txt) --token=$(cat argocd-application-deployer.token) \
 delete \
 -n argocd \
@@ -365,15 +391,15 @@ delete \
 -l selection=toolkit-applications
 
 # Uninstalling argocd stack and its dependencies
-terraform -chdir=cluster-tools \
+terraform -chdir=cluster-toolkit \
 destroy \
 -var cluster_ca_certificate=../cluster-ca.crt \
--var service_account_token=../cluster-tools-installer.token \
+-var service_account_token=../cluster-toolkit.token \
 -var cluster_endpoint=$(cat cluster-endpoint.txt) \
 -auto-approve
 ```
 
-### Installing cluster tools with Argo CD
+### Installing cluster toolkit with Argo CD
 
 ```bash
 argocd_application_deployer_credentials_helm="
@@ -382,9 +408,9 @@ argocd_application_deployer_credentials_helm="
   --kube-token=$(cat argocd-application-deployer.token)
 "
 
-release=cluster-tools-argocd-apps
-chart=./cluster-tools/.argocd-apps
-values=./cluster-tools/.argocd-apps/values.yaml
+release=cluster-toolkit-argocd-apps
+chart=./cluster-toolkit/.argocd-apps
+values=./cluster-toolkit/.argocd-apps/values.yaml
 namespace=argocd
 
 list=$(helm $argocd_application_deployer_credentials_helm list --short -n $namespace)
