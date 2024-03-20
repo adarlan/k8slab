@@ -327,10 +327,10 @@ The configuration is defined in the [`cluster-toolkit`](./cluster-toolkit) direc
 
 This action requires the `cluster-toolkit` credentials.
 
-### Installing Nginx Ingress Controller
+### Installing Ingress-Nginx Controller
 
 ```bash
-name=ingress-nginx
+name=ingress
 terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
@@ -338,7 +338,7 @@ terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) 
 ### Installing Argo CD
 
 ```bash
-name=argo-cd
+name=argocd
 terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
@@ -346,7 +346,7 @@ terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) 
 #### Argo CD admin password
 
 ```bash
-terraform -chdir=cluster-toolkit/argo-cd output -raw argocd_admin_password > argocd-admin.password
+terraform -chdir=cluster-toolkit/argocd output -raw argocd_admin_password > argocd-admin.password
 ```
 
 #### Argo CD CLI login
@@ -365,26 +365,10 @@ argocd login --grpc-web --insecure argocd.localhost --username admin --password 
 <!-- COMMAND echo Username: admin -->
 <!-- COMMAND echo Password: $(cat argocd-admin.password) -->
 
-### Installing Grafana Loki
+### Installing Monitoring Stack
 
 ```bash
-name=loki
-terraform -chdir=cluster-toolkit/$name init
-terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
-```
-
-### Installing Promtail Agent
-
-```bash
-name=promtail
-terraform -chdir=cluster-toolkit/$name init
-terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
-```
-
-### Installing Kube Prometheus Stack
-
-```bash
-name=kube-prometheus-stack
+name=monitoring
 terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
@@ -398,7 +382,7 @@ terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) 
 #### Grafana admin password
 
 ```bash
-terraform -chdir=cluster-toolkit/kube-prometheus-stack output -raw grafana_admin_password > grafana-admin.password
+terraform -chdir=cluster-toolkit/monitoring output -raw grafana_admin_password > grafana-admin.password
 ```
 
 #### Grafana user interface
@@ -758,11 +742,9 @@ argocd app delete crudify --yes
 ### Uninstalling cluster toolkit
 
 ```bash
-terraform -chdir=cluster-toolkit/argo-cd destroy $(cat cluster-toolkit.credentials) -auto-approve
-terraform -chdir=cluster-toolkit/kube-prometheus-stack destroy $(cat cluster-toolkit.credentials) -auto-approve
-terraform -chdir=cluster-toolkit/ingress-nginx destroy $(cat cluster-toolkit.credentials) -auto-approve
-terraform -chdir=cluster-toolkit/promtail destroy $(cat cluster-toolkit.credentials) -auto-approve
-terraform -chdir=cluster-toolkit/loki destroy $(cat cluster-toolkit.credentials) -auto-approve
+terraform -chdir=cluster-toolkit/argocd destroy $(cat cluster-toolkit.credentials) -auto-approve
+terraform -chdir=cluster-toolkit/monitoring destroy $(cat cluster-toolkit.credentials) -auto-approve
+terraform -chdir=cluster-toolkit/ingress destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
 ### Removing RBAC and namespace configurations
