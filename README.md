@@ -4,53 +4,59 @@ A project intended for exploring with a local [Kubernetes](https://kubernetes.io
 bundled with popular open-source tools and example applications,
 simulating a real environment.
 
-### Features
+Run the simulation by following the steps below:
 
-- [Terraform](https://www.terraform.io/) for resource provisioning
-- [Helm](https://helm.sh/) for manifest file generation
-- [Kustomize](https://kustomize.io/) for deployment configuration
-- [Argo CD](https://argoproj.github.io/cd/) for continuous deployment
-- [Ingress-Nginx Controller](https://kubernetes.github.io/ingress-nginx/) for traffic routing
-- [Prometheus](https://prometheus.io/) for metrics scraping
-- [Grafana Loki](https://grafana.com/oss/loki/) for log aggregation
-- [Grafana OSS](https://grafana.com/oss/grafana/) for dashboard visualization
+1. [Cluster Provisioning](#1-cluster-provisioning) - Creating a local Kubernetes cluster.
+2. [Cluster-Level RBAC Configuration](#2-cluster-level-rbac-configuration) - Granting access to cluster-wide users and service accounts.
+3. [Namespace Provisioning](#3-namespace-provisioning) - Creating namespaces along with their resource quotas and limit ranges.
+4. [Namespace-Level RBAC Configuration](#4-namespace-level-rbac-configuration) - Granting namespace-level access for users and service accounts.
+5. [Cluster Toolkit Installation](#5-cluster-toolkit-installation) - Installing tools that extend the cluster's functionality.
+6. [Application Deployment](#6-application-deployment) - Deploying example applications to the cluster.
 
-### Example Applications
+To execute these steps automatically, use the [`run.sh`](./run.sh) script:
+
+- `./run.sh up` to run all steps, from cluster provisioning to application deployment.
+- `./run.sh down` to remove all resources and destroy the cluster.
+
+#### Cluster Toolkit
+
+The following tools will be installed into the cluster to enhance its capabilities in terms of networking, continuous deployment, and monitoring:
+
+- [Ingress-Nginx](https://kubernetes.github.io/ingress-nginx/) for traffic routing.
+- [Argo CD](https://argoproj.github.io/cd/) for continuous deployment.
+- [Prometheus](https://prometheus.io/) for metrics scraping.
+- [Loki](https://grafana.com/oss/loki/) for log aggregation.
+- [Grafana](https://grafana.com/oss/grafana/) for dashboard visualization.
+
+#### Example Applications
 
 To explore with the cluster features, we will deploy two example applications:
 
 - [Hello World](#hello-world): A simple web application that displays a greeting message and will be continuously deployed across multiple environments with distinct configuration.
-- [CRUDify](#crudify): A microservice-based CRUD application composed by multiple components designed to experiment with metrics, logs, dashboards, and other features.
+- [CRUDify](#crudify): A microservice-based CRUD application composed by multiple components designed to experiment with meaningful metrics, logs, dashboards, and other features.
 
-### Simulation Steps
+#### Dummy Users
 
-Run the simulation by following the step-by-step guide below.
+To simulate real users, we will grant access for these dummy users so that you can interact with the cluster using their credentials:
 
-1. [Cluster Provisioning](#1-cluster-provisioning)
-2. [Cluster-Level RBAC](#2-cluster-level-rbac)
-3. [Namespace Provisioning](#3-namespace-provisioning)
-4. [Namespace-Level RBAC](#4-namespace-level-rbac)
-5. [Cluster Toolkit Installation](#5-cluster-toolkit-installation)
-6. [Application Deployment](#6-application-deployment)
+- [John Dev](#john-dev-credentials) - A namespace-level user responsible for developing applications.
+- [Jane Ops](#jane-ops-credentials) - A cluster-wide user responsible for administrating the cluster.
 
-To execute these steps automatically, use the [`run.sh`](./run.sh) script:
+#### Automation Tools and CLIs
 
-- `./run.sh up` to run all steps from cluster provisioning to application deployment.
-- `./run.sh down` to remove resources and destroy the cluster.
-
-Requirements:
-
-- Docker Engine
-- Terraform
-- Kubernetes CLI (`kubectl`)
-- Argo CD CLI (`argocd`)
+- [terraform](https://www.terraform.io/) for resource provisioning.
+- [kubectl](https://kubernetes.io/docs/reference/kubectl/) for interacting with the cluster.
+- [argocd](https://argo-cd.readthedocs.io/en/stable/cli_installation/) for deployment management.
+- [helm](https://helm.sh/) for manifest file generation.
+- [kustomize](https://kustomize.io/) for simplified manifest configuration.
+- [docker](https://docs.docker.com/engine/) for running cluster "nodes".
 
 <!-- BEGIN up -->
 <!-- BEGIN cluster-provisioning -->
 
 ## 1. Cluster Provisioning
 
-This step involves creating the Kubernetes cluster itself.
+Creating a local Kubernetes cluster.
 
 We'll create a [KinD](https://kind.sigs.k8s.io/) (Kubernetes-in-Docker) cluster,
 which is a local Kubernetes cluster that uses Docker containers as "nodes".
@@ -109,9 +115,9 @@ echo \
 <!-- END cluster-provisioning -->
 <!-- BEGIN cluster-rbac -->
 
-## 2. Cluster-Level RBAC
+## 2. Cluster-Level RBAC Configuration
 
-This step involves granting access to cluster-wide users and service accounts that will be given cluster roles.
+Granting access to cluster-wide users and service accounts.
 
 This action will create:
 
@@ -212,7 +218,7 @@ kubectl config set-context janeops --cluster=k8slab --user=janeops
 
 ## 3. Namespace Provisioning
 
-This step involves creating `namespaces` along with their `resourcequotas` and `limitranges`.
+Creating namespaces along with their resource quotas and limit ranges.
 
 Namespaces to host the cluster toolkit:
 
@@ -245,9 +251,9 @@ terraform -chdir=namespace-provisioning apply $(cat namespace-provisioning.crede
 <!-- END namespace-provisioning -->
 <!-- BEGIN namespace-rbac -->
 
-## 4. Namespace-Level RBAC
+## 4. Namespace-Level RBAC Configuration
 
-This step involves granting namespace-level access for users and service accounts.
+Granting namespace-level access for users and service accounts.
 
 It will create:
 
@@ -315,8 +321,7 @@ kubectl config set-context johndev --cluster=k8slab --user=johndev
 
 ## 5. Cluster Toolkit Installation
 
-This step involves installing tools that extend the functionality of the Kubernetes cluster,
-improving networking, deployment, monitoring, and more.
+Installing tools that extend the cluster's functionality.
 
 The configuration is defined in the [`cluster-toolkit`](./cluster-toolkit) directory.
 
@@ -341,7 +346,7 @@ terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) 
 #### Argo CD admin password
 
 ```bash
-terraform -chdir=cluster-toolkit/argo-cd output -raw admin_password > argocd-admin.password
+terraform -chdir=cluster-toolkit/argo-cd output -raw argocd_admin_password > argocd-admin.password
 ```
 
 #### Argo CD CLI login
@@ -411,7 +416,7 @@ terraform -chdir=cluster-toolkit/kube-prometheus-stack output -raw grafana_admin
 
 ## 6. Application Deployment
 
-This step involves deploying example applications into the Kubernetes cluster.
+Deploying example applications to the cluster.
 
 #### Application source code
 
