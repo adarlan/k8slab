@@ -42,14 +42,16 @@ To simulate real users, we will grant access for these dummy users so that you c
 - [John Dev](#john-dev-credentials) - A namespace-level user responsible for developing applications.
 - [Jane Ops](#jane-ops-credentials) - A cluster-wide user responsible for administrating the cluster.
 
-#### Automation Tools and CLIs
+#### CLI Tools
+
+These are the CLI tools required for setting up and interacting with your local Kubernetes environment:
 
 - [terraform](https://www.terraform.io/) for resource provisioning.
+- [docker](https://docs.docker.com/engine/) for running cluster "nodes".
 - [kubectl](https://kubernetes.io/docs/reference/kubectl/) for interacting with the cluster.
 - [argocd](https://argo-cd.readthedocs.io/en/stable/cli_installation/) for deployment management.
 - [helm](https://helm.sh/) for manifest file generation.
 - [kustomize](https://kustomize.io/) for simplified manifest configuration.
-- [docker](https://docs.docker.com/engine/) for running cluster "nodes".
 
 <!-- BEGIN up -->
 <!-- BEGIN cluster-provisioning -->
