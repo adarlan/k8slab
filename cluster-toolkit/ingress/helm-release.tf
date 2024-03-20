@@ -2,13 +2,13 @@ resource "helm_release" "ingress_nginx" {
 
   name = "ingress-nginx"
 
-  namespace        = "ingress"
+  namespace = "ingress"
 
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
   version    = "4.10.0"
 
-  timeout       = 1200
+  timeout       = 240
   wait          = true
   wait_for_jobs = true
 

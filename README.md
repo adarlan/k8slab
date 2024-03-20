@@ -331,11 +331,15 @@ This action requires the `cluster-toolkit` credentials.
 
 ### Installing Ingress-Nginx Controller
 
+<!-- BEGIN up-ingress -->
+
 ```bash
 name=ingress
 terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
+
+<!-- END up-ingress -->
 
 ### Installing Argo CD
 
@@ -743,24 +747,59 @@ argocd app delete crudify --yes
 
 ### Uninstalling cluster toolkit
 
+
+<!-- BEGIN down-monitoring -->
+```bash
+terraform -chdir=cluster-toolkit/monitoring destroy $(cat cluster-toolkit.credentials) -auto-approve
+```
+<!-- END down-monitoring -->
+
+
+<!-- BEGIN down-argocd -->
 ```bash
 terraform -chdir=cluster-toolkit/argocd destroy $(cat cluster-toolkit.credentials) -auto-approve
-terraform -chdir=cluster-toolkit/monitoring destroy $(cat cluster-toolkit.credentials) -auto-approve
+```
+<!-- END down-argocd -->
+
+
+<!-- BEGIN down-ingress -->
+```bash
 terraform -chdir=cluster-toolkit/ingress destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
+<!-- END down-ingress -->
+
 
 ### Removing RBAC and namespace configurations
 
+#### Destroy Namespace RBAC
+
+<!-- BEGIN destroy-namespace-rbac -->
+
 ```bash
-# Destroy namespace-rbac
 terraform -chdir=namespace-rbac destroy $(cat namespace-rbac.credentials) -auto-approve
+```
 
-# Destroy namespace-provisioning
+<!-- END destroy-namespace-rbac -->
+
+#### Destroy Namespace Provisioning
+
+<!-- BEGIN destroy-namespace-provisioning -->
+
+```bash
 terraform -chdir=namespace-provisioning destroy $(cat namespace-provisioning.credentials) -auto-approve
+```
 
-# Destroy cluster-rbac
+<!-- END destroy-namespace-provisioning -->
+
+#### Destroy Cluster RBAC
+
+<!-- BEGIN destroy-cluster-rbac -->
+
+```bash
 terraform -chdir=cluster-rbac destroy $(cat root-user.credentials) -auto-approve
 ```
+
+<!-- END destroy-cluster-rbac -->
 
 <!-- BEGIN destroy -->
 

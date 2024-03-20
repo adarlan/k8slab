@@ -1,12 +1,28 @@
 namespaces:
 
+- name: ingress
+  hardResourceQuota:
+    pods: "5"
+    requests.cpu: 500m
+    requests.memory: 500M
+    limits.cpu: 750m
+    limits.memory: 1G
+
 - name: argocd
   # hardResourceQuota:
-  #   pods: "10"
-  #   requests.cpu: "0.25"
-  #   limits.cpu: "1"
-  #   requests.memory: 256Mi
+  #   pods: "16"
+  #   requests.cpu: 100m
+  #   requests.memory: 512Mi
+  #   limits.cpu: 750m
   #   limits.memory: 1Gi
+
+- name: monitoring
+  # hardResourceQuota:
+  #   pods: "32"
+  #   requests.cpu: 100m
+  #   requests.memory: 1Gi
+  #   limits.cpu: 1500m
+  #   limits.memory: 2Gi
 
 - name: development
   hardResourceQuota:
@@ -39,19 +55,3 @@ namespaces:
     limits.cpu:   2000m
     requests.memory: 512Mi
     limits.memory:   2Gi
-
-- name: monitoring
-  # hardResourceQuota:
-  #   pods: "50"
-  #   requests.cpu: "0.25"
-  #   limits.cpu: "1"
-  #   requests.memory: 256Mi
-  #   limits.memory: 1Gi
-
-- name: ingress
-#   hardResourceQuota:
-#     pods: "10"
-#     requests.cpu: "0.05"
-#     limits.cpu: "0.5"
-#     requests.memory: 128Mi
-#     limits.memory: 512Mi

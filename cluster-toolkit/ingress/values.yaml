@@ -18,3 +18,27 @@ controller:
     enabled: false
   extraArgs:
     publish-status-address: "localhost"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100M
+    limits:
+      cpu: 150m
+      memory: 200M
+  admissionWebhooks:
+    createSecretJob:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 100M
+        limits:
+          cpu: 150m
+          memory: 200M
+    patchWebhookJob:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 100M
+        limits:
+          cpu: 150m
+          memory: 200M
