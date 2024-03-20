@@ -18,9 +18,16 @@ To execute these steps automatically, use the [`run.sh`](./run.sh) script:
 - `./run.sh up` to run all steps, from cluster provisioning to application deployment.
 - `./run.sh down` to remove all resources and destroy the cluster.
 
+#### Dummy Users
+
+To simulate real users, we will grant access for these dummy users so that you can interact with the cluster using their credentials:
+
+- [John Dev](#john-dev-credentials) - A namespace-level user responsible for developing applications.
+- [Jane Ops](#jane-ops-credentials) - A cluster-wide user responsible for operating the cluster.
+
 #### Cluster Toolkit
 
-The following tools will be installed into the cluster to enhance its capabilities in terms of networking, continuous deployment, and monitoring:
+The following tools will be installed into the cluster to enhance its capabilities in terms of networking, deployment, and monitoring:
 
 - [Ingress-Nginx](https://kubernetes.github.io/ingress-nginx/) for traffic routing.
 - [Argo CD](https://argoproj.github.io/cd/) for continuous deployment.
@@ -32,30 +39,48 @@ The following tools will be installed into the cluster to enhance its capabiliti
 
 To explore with the cluster features, we will deploy two example applications:
 
-- [Hello World](#hello-world): A simple web application that displays a greeting message and will be continuously deployed across multiple environments with distinct configuration.
-- [CRUDify](#crudify): A microservice-based CRUD application composed by multiple components designed to experiment with meaningful metrics, logs, dashboards, and other features.
+- [Hello World](#hello-world): A simple web application that will be deployed across multiple environments with distinct configuration.
+- [CRUDify](#crudify): A microservice-based CRUD application designed to experiment with meaningful metrics, logs, dashboards, and other features.
 
-#### Dummy Users
+#### Ingress Configuration
 
-To simulate real users, we will grant access for these dummy users so that you can interact with the cluster using their credentials:
+The ingress controller will be configured using `localhost` to emulate a live domain.
 
-- [John Dev](#john-dev-credentials) - A namespace-level user responsible for developing applications.
-- [Jane Ops](#jane-ops-credentials) - A cluster-wide user responsible for administrating the cluster.
+Here is what it exposes:
+
+##### Cluster toolkit web interfaces
+
+- Argo CD: `http://argocd.localhost`
+- Prometheus: `http://prometheus.localhost`
+- Grafana: `http://grafana.localhost`
+
+##### Hello World application versions
+
+- Development: `http://dev.localhost/hello`
+- Staging: `http://staging.hello.localhost`
+- Production: `http://hello.localhost`
+
+##### CRUDify API endpoints
+
+- Create: `http://crud.localhost/create`
+- Read: `http://crud.localhost/read/<QUERY>`
+- Update: `http://crud.localhost/update/<QUERY>`
+- Delete: `http://crud.localhost/delete/<QUERY>`
 
 #### CLI Tools
 
 These are the CLI tools required for setting up and interacting with your local Kubernetes environment:
 
 - [terraform](https://www.terraform.io/) for resource provisioning.
-- [docker](https://docs.docker.com/engine/) for running cluster "nodes".
+- [docker](https://docs.docker.com/engine/) (Docker Engine) for running cluster "nodes".
 - [kubectl](https://kubernetes.io/docs/reference/kubectl/) for interacting with the cluster.
 - [argocd](https://argo-cd.readthedocs.io/en/stable/cli_installation/) for deployment management.
 - [helm](https://helm.sh/) for manifest file generation.
-- [kustomize](https://kustomize.io/) for simplified manifest configuration.
+- [kustomize](https://kustomize.io/) (built into kubectl) for simplified manifest configuration.
 
-<!-- BEGIN up -->
-<!-- BEGIN cluster-provisioning -->
+<!-- COMMAND up -->
 
+<!-- TARGET cluster-provisioning -->
 ## 1. Cluster Provisioning
 
 Creating a local Kubernetes cluster.
@@ -66,17 +91,16 @@ which is a local Kubernetes cluster that uses Docker containers as "nodes".
 We could use the `kind` CLI tool to create the cluster,
 but we will use `terraform` to make it more like a real environment.
 
-The Terraform configuration is defined in the [`cluster-provisioning`](./cluster-provisioning) directory.
+The configuration is defined in the [`cluster-provisioning`](./cluster-provisioning) directory.
 
 ```bash
-# Init and apply cluster-provisioning Terraform configuration
 terraform -chdir=cluster-provisioning init
 terraform -chdir=cluster-provisioning apply -auto-approve
 ```
 
-### Cluster credentials
+### Cluster Credentials
 
-These credentials are necessary for users and service accounts to connect to the cluster.
+These credentials are necessary for users and service accounts to connect to the cluster:
 
 ```bash
 # Retrieve cluster endpoint
@@ -84,19 +108,23 @@ terraform -chdir=cluster-provisioning output -raw endpoint > cluster-endpoint.tx
 
 # Retrieve cluster CA certificate
 terraform -chdir=cluster-provisioning output -raw ca_certificate > cluster-ca.crt
+```
 
+```bash
 # Set cluster entry in kubeconfig
 kubectl config set-cluster k8slab --server=$(cat cluster-endpoint.txt) --certificate-authority=$(realpath cluster-ca.crt) --embed-certs=true
 ```
 
-We'll need the cluster CA key to sign user certificates.
+The cluster CA key is necessary for signing user certificates:
 
 ```bash
 # Retrieve cluster CA key
 terraform -chdir=cluster-provisioning output -raw ca_key > cluster-ca.key
 ```
 
-### Root user credentials
+### Root User Credentials
+
+These credentials are necessary for [cluster-level RBAC configuration](#2-cluster-level-rbac-configuration).
 
 ```bash
 # Retrieve root user key
@@ -104,7 +132,9 @@ terraform -chdir=cluster-provisioning output -raw root_user_key > root.key
 
 # Retrieve root user certificate
 terraform -chdir=cluster-provisioning output -raw root_user_certificate > root.crt
+```
 
+```bash
 # Create root-user.credentials file
 echo \
 -var cluster_endpoint=$(cat cluster-endpoint.txt) \
@@ -114,39 +144,35 @@ echo \
 > root-user.credentials
 ```
 
-<!-- END cluster-provisioning -->
-<!-- BEGIN cluster-rbac -->
-
+<!-- TARGET cluster-rbac -->
 ## 2. Cluster-Level RBAC Configuration
 
 Granting access to cluster-wide users and service accounts.
 
 This action will create:
 
-- the `namespace-provisioning` service account,
-- the `namespace-rbac` service account,
-- the `cluster-toolkit` service account,
-- and the `cluster-administrator` cluster role along with a `Jane Ops` user cluster role binding.
+- `namespace-provisioning`, `namespace-rbac`, and `cluster-toolkit` service accounts.
+- `cluster-administrator` cluster role along with a `Jane Ops` user cluster role binding.
 
 You can change this configuration by editing the [`cluster-rbac/values.yaml`](./cluster-rbac/values.yaml) file.
 
-This is the only action that requires the `root-user` credentials.
-After this, we'll have less-privileged users and service accounts to operate the cluster.
+This action requires the [root user credentials](#root-user-credentials).
 
 ```bash
-# Init and apply cluster-rbac Terraform configuration
 terraform -chdir=cluster-rbac init
 terraform -chdir=cluster-rbac apply $(cat root-user.credentials) -auto-approve
 ```
 
 ### Namespace Provisioning Credentials
 
-These credentials are necessary for provisioning namespaces along with their resource quotas and limit ranges.
+These credentials are necessary for [namespace provisioning](#3-namespace-provisioning).
 
 ```bash
 # Retrieve namespace-provisioning service account token
 terraform -chdir=cluster-rbac output -raw namespace_provisioning_token > namespace-provisioning.token
+```
 
+```bash
 # Create namespace-provisioning.credentials file
 echo \
 -var cluster_endpoint=$(cat cluster-endpoint.txt) \
@@ -157,12 +183,14 @@ echo \
 
 ### Namespace RBAC Credentials
 
-These credentials are necessary for granting namespace-level access for users and service accounts.
+These credentials are necessary for [namespace-level RBAC configuration](#4-namespace-level-rbac-configuration).
 
 ```bash
 # Retrieve namespace-rbac service account token
 terraform -chdir=cluster-rbac output -raw namespace_rbac_token > namespace-rbac.token
+```
 
+```bash
 # Create namespace-rbac.credentials file
 echo \
 -var cluster_endpoint=$(cat cluster-endpoint.txt) \
@@ -173,7 +201,7 @@ echo \
 
 ### Cluster Toolkit Credentials
 
-These credentials are necessary for installing tools that extend the cluster's functionality.
+These credentials are necessary for [cluster toolkit installation](#5-cluster-toolkit-installation).
 
 ```bash
 # Retrieve cluster-toolkit service account token
@@ -189,14 +217,7 @@ echo \
 
 ### Jane Ops Credentials
 
-Jane Ops is a cluster-wide user responsible for administrating the cluster.
-
-To facilitate your interaction with the cluster,
-we will set up Jane Ops credentials in your `kubectl` configuration.
-
-To use her credentials,
-simply run `kubectl config use-context janeops` before your `kubectl` commands
-or add the `--context janeops` option to each `kubectl` command.
+Jane Ops is a cluster-wide user responsible for operating the cluster.
 
 ```bash
 # Generate private key
@@ -207,7 +228,16 @@ openssl req -new -key janeops.key -out janeops.csr -subj "/CN=Jane Ops"
 
 # Sign certificate
 openssl x509 -req -in janeops.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out janeops.crt -days 1
+```
 
+To facilitate your interaction with the cluster,
+we will set up Jane Ops credentials in your `kubectl` configuration.
+
+To use her credentials,
+simply run `kubectl config use-context janeops` before your `kubectl` commands
+or add the `--context janeops` option to each `kubectl` command.
+
+```bash
 # Set user entry in kubeconfig
 kubectl config set-credentials janeops --client-key=janeops.key --client-certificate=janeops.crt --embed-certs=true
 
@@ -215,72 +245,64 @@ kubectl config set-credentials janeops --client-key=janeops.key --client-certifi
 kubectl config set-context janeops --cluster=k8slab --user=janeops
 ```
 
-<!-- END cluster-rbac -->
-<!-- BEGIN namespace-provisioning -->
-
+<!-- TARGET namespace-provisioning -->
 ## 3. Namespace Provisioning
 
 Creating namespaces along with their resource quotas and limit ranges.
 
-Namespaces to host the cluster toolkit:
+This action will create the following namespaces:
 
 - `argocd`
 - `ingress`
 - `monitoring`
-
-Namespaces to host the Hello World application:
-
 - `development`
 - `staging`
 - `production`
-
-Namespaces to host the CRUDify application:
-
 - `crudify-api`
 - `crudify-database`
 - `crudify-clients`
 
 You can change this configuration by editing the [`namespace-provisioning/values.yaml`](./namespace-provisioning/values.yaml) file.
 
-This action requires the `namespace-provisioning` credentials.
+This action requires the [namespace provisioning credentials](#namespace-provisioning-credentials).
 
 ```bash
-# Init and apply namespace-provisioning configuration
 terraform -chdir=namespace-provisioning init
 terraform -chdir=namespace-provisioning apply $(cat namespace-provisioning.credentials) -auto-approve
 ```
 
-<!-- END namespace-provisioning -->
-<!-- BEGIN namespace-rbac -->
-
+<!-- TARGET namespace-rbac -->
 ## 4. Namespace-Level RBAC Configuration
 
 Granting namespace-level access for users and service accounts.
 
-It will create:
+This action will create:
 
-- The `application-deployer` service account in the `argocd` namespace
-- The `developer` role along with a `John Dev` user role binding in the `development` namespace
+- The `application-deployer` service account in the `argocd` namespace.
+- The `developer` role along with a `John Dev` user role binding in the `development` namespace.
 
 You can change this configuration by editing the [`namespace-rbac/values.yaml`](./namespace-rbac/values.yaml) file.
 
-This action requires the `namespace-rbac` credentials.
+This action requires the [namespace RBAC configuration credentials](#namespace-rbac-credentials).
 
 ```bash
-# Init and apply namespace-rbac Terraform configuration
 terraform -chdir=namespace-rbac init
 terraform -chdir=namespace-rbac apply $(cat namespace-rbac.credentials) -auto-approve
 ```
 
-### Argo CD application deployer credentials
+### Argo CD Application Deployer Credentials
 
-Argo CD application deployer is a namespace-level service account
+These credentials are necessary for deploying applications to the cluster.
+
+`application-deployer` is a namespace-level service account
 responsible for managing the `Application` and `ApplicationSet` resources in the `argocd` namespace.
 
 ```bash
 # Retrieve the argocd-application-deployer service account token
 terraform -chdir=namespace-rbac output -raw argocd_application_deployer_token > argocd-application-deployer.token
+```
 
+```bash
 # Create the argocd-application-deployer.credentials file
 echo \
 --server=$(cat cluster-endpoint.txt) \
@@ -294,13 +316,6 @@ echo \
 John Dev is a namespace-level user responsible for developing applications,
 authorized to manage application resources in the `development` namespace.
 
-To facilitate your interaction with the cluster,
-we will set up John Dev credentials in your `kubectl` configuration.
-
-To use his credentials,
-simply run `kubectl config use-context johndev` before your `kubectl` commands
-or add the `--context johndev` option to each `kubectl` command.
-
 ```bash
 # Generate private key
 openssl genrsa -out johndev.key 2048
@@ -310,7 +325,16 @@ openssl req -new -key johndev.key -out johndev.csr -subj "/CN=John Dev"
 
 # Sign certificate
 openssl x509 -req -in johndev.csr -CA cluster-ca.crt -CAkey cluster-ca.key -CAcreateserial -out johndev.crt -days 1
+```
 
+To facilitate your interaction with the cluster,
+we will set up John Dev credentials in your `kubectl` configuration.
+
+To use his credentials,
+simply run `kubectl config use-context johndev` before your `kubectl` commands
+or add the `--context johndev` option to each `kubectl` command.
+
+```bash
 # Set user entry in kubeconfig
 kubectl config set-credentials johndev --client-key=johndev.key --client-certificate=johndev.crt --embed-certs=true
 
@@ -318,20 +342,21 @@ kubectl config set-credentials johndev --client-key=johndev.key --client-certifi
 kubectl config set-context johndev --cluster=k8slab --user=johndev
 ```
 
-<!-- END namespace-rbac -->
-<!-- BEGIN cluster-toolkit -->
-
+<!-- TARGET cluster-toolkit -->
 ## 5. Cluster Toolkit Installation
 
 Installing tools that extend the cluster's functionality.
 
 The configuration is defined in the [`cluster-toolkit`](./cluster-toolkit) directory.
 
-This action requires the `cluster-toolkit` credentials.
+This action requires the [cluster toolkit installation credentials](#cluster-toolkit-credentials).
 
-### Installing Ingress-Nginx Controller
+<!-- TARGET cluster-toolkit/ingress -->
+### Ingress Toolkit Installation
 
-<!-- BEGIN up-ingress -->
+This action will install the following components into the cluster:
+
+- Ingress-Nginx Controller
 
 ```bash
 name=ingress
@@ -339,9 +364,12 @@ terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-<!-- END up-ingress -->
+<!-- TARGET cluster-toolkit/argocd -->
+### ArgoCD Toolkit Installation
 
-### Installing Argo CD
+This action will install the following components into the cluster:
+
+- Argo CD
 
 ```bash
 name=argocd
@@ -367,11 +395,19 @@ argocd login --grpc-web --insecure argocd.localhost --username admin --password 
 - Username: `admin`
 - The password is stored in the file: `argocd-admin.password`
 
-<!-- COMMAND nohup xdg-open http://argocd.localhost > /dev/null 2>&1 -->
-<!-- COMMAND echo Username: admin -->
-<!-- COMMAND echo Password: $(cat argocd-admin.password) -->
+<!-- EXEC nohup xdg-open http://argocd.localhost > /dev/null 2>&1 -->
+<!-- EXEC echo Username: admin -->
+<!-- EXEC echo Password: $(cat argocd-admin.password) -->
 
-### Installing Monitoring Stack
+<!-- TARGET cluster-toolkit/monitoring -->
+### Monitoring Toolkit Installation
+
+This action will install the following components into the cluster:
+
+- Prometheus
+- Loki Server
+- Protail Agent
+- Grafana
 
 ```bash
 name=monitoring
@@ -383,7 +419,7 @@ terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) 
 
 - [http://prometheus.localhost](http://prometheus.localhost)
 
-<!-- COMMAND nohup xdg-open http://prometheus.localhost > /dev/null 2>&1 -->
+<!-- EXEC nohup xdg-open http://prometheus.localhost > /dev/null 2>&1 -->
 
 #### Grafana admin password
 
@@ -397,13 +433,11 @@ terraform -chdir=cluster-toolkit/monitoring output -raw grafana_admin_password >
 - Username: `admin`
 - The password is stored in the file: `grafana-admin.password`
 
-<!-- COMMAND nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
-<!-- COMMAND echo Username: admin -->
-<!-- COMMAND echo Password: $(cat grafana-admin.password) -->
+<!-- EXEC nohup xdg-open http://grafana.localhost > /dev/null 2>&1 -->
+<!-- EXEC echo Username: admin -->
+<!-- EXEC echo Password: $(cat grafana-admin.password) -->
 
-<!-- END cluster-toolkit -->
-<!-- BEGIN deploy -->
-
+<!-- TARGET app-deploy -->
 ## 6. Application Deployment
 
 Deploying example applications to the cluster.
@@ -428,8 +462,7 @@ The deployment configuration of the applications reside in the [`app-deploy`](./
 Argo CD watches for changes in these directories
 to deploy and synchronize modifications into the cluster.
 
-<!-- BEGIN hello-world -->
-
+<!-- TARGET app-deploy/hello-world -->
 ### Hello World
 
 The Hello World application is a simple web application that displays a greeting message.
@@ -466,6 +499,7 @@ file.
 This action requires the Argo CD application deployer credentials.
 
 ```bash
+kubectl config unset current-context
 kubectl $(cat argocd-application-deployer.credentials) \
 apply \
 --namespace argocd \
@@ -520,9 +554,7 @@ curl http://staging.hello.localhost
 curl http://hello.localhost
 ```
 
-<!-- END hello-world -->
-<!-- BEGIN crudify -->
-
+<!-- TARGET app-deploy/crudify -->
 ### CRUDify
 
 CRUDify is a CRUD application written in Python.
@@ -592,6 +624,7 @@ We'll use the Argo CD `Application` resource to deploy the CRUDify application.
 This action requires the `argocd-application-deployer` credentials.
 
 ```bash
+kubectl config unset current-context
 kubectl $(cat argocd-application-deployer.credentials) \
 apply \
 --namespace argocd \
@@ -719,20 +752,14 @@ Other examples:
 
 - http://grafana.localhost/d/crudify
 
-<!-- END crudify -->
-<!-- END deploy -->
-<!-- END up -->
-
-<!-- BEGIN down -->
-
+<!-- COMMAND down -->
 ## 7. Cleanup and Tear Down
 
 This step involves deleting all resources in the cluster,
 which includes undeploying applications, uninstalling cluster toolkit, and removing RBAC and namespace configurations.
 Finally, the cluster itself is destroyed.
 
-<!-- BEGIN undeploy -->
-
+<!-- TARGET apps -->
 ### Undeploying applications
 
 ```bash
@@ -743,73 +770,61 @@ argocd appset delete hello-world --yes
 argocd app delete crudify --yes
 ```
 
-<!-- END undeploy -->
+<!-- TARGET cluster-toolkit -->
+### Cluster Toolkit Uninstall
 
-### Uninstalling cluster toolkit
+<!-- TARGET cluster-toolkit/monitoring -->
+#### Monitoring Toolkit Uninstall
 
-
-<!-- BEGIN down-monitoring -->
 ```bash
 terraform -chdir=cluster-toolkit/monitoring destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
-<!-- END down-monitoring -->
 
+<!-- TARGET cluster-toolkit/argocd -->
+#### ArgoCD Toolkit Uninstall
 
-<!-- BEGIN down-argocd -->
 ```bash
 terraform -chdir=cluster-toolkit/argocd destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
-<!-- END down-argocd -->
 
+<!-- TARGET cluster-toolkit/ingress -->
+#### Ingress Toolkit Uninstall
 
-<!-- BEGIN down-ingress -->
 ```bash
 terraform -chdir=cluster-toolkit/ingress destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
-<!-- END down-ingress -->
-
 
 ### Removing RBAC and namespace configurations
 
+<!-- TARGET namespace-rbac -->
 #### Destroy Namespace RBAC
-
-<!-- BEGIN destroy-namespace-rbac -->
 
 ```bash
 terraform -chdir=namespace-rbac destroy $(cat namespace-rbac.credentials) -auto-approve
 ```
 
-<!-- END destroy-namespace-rbac -->
-
+<!-- TARGET namespace-provisioning -->
 #### Destroy Namespace Provisioning
-
-<!-- BEGIN destroy-namespace-provisioning -->
 
 ```bash
 terraform -chdir=namespace-provisioning destroy $(cat namespace-provisioning.credentials) -auto-approve
 ```
 
-<!-- END destroy-namespace-provisioning -->
-
+<!-- TARGET cluster-rbac -->
 #### Destroy Cluster RBAC
-
-<!-- BEGIN destroy-cluster-rbac -->
 
 ```bash
 terraform -chdir=cluster-rbac destroy $(cat root-user.credentials) -auto-approve
 ```
 
-<!-- END destroy-cluster-rbac -->
-
-<!-- BEGIN destroy -->
-
+<!-- TARGET cluster-provisioning -->
 ### Destroying cluster
 
 ```bash
-# Destroy cluster-provisioning
 terraform -chdir=cluster-provisioning destroy -auto-approve
 ```
 
+<!-- TARGET cluster-nodes -->
 ### Forcibly destroying cluster
 
 If for some reason previous cleanup actions failed,
@@ -824,17 +839,15 @@ docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_n
 done
 ```
 
+<!-- TARGET gitignored -->
 ### Removing gitignored files
 
 ```bash
-(cd cluster-toolkit;          git clean -Xfd)
-(cd namespace-rbac;         git clean -Xfd)
+(cd cluster-toolkit; git clean -Xfd)
+(cd namespace-rbac; git clean -Xfd)
 (cd namespace-provisioning; git clean -Xfd)
-(cd cluster-rbac;           git clean -Xfd)
-(cd cluster-provisioning;   git clean -Xfd)
+(cd cluster-rbac; git clean -Xfd)
+(cd cluster-provisioning; git clean -Xfd)
 
 git clean -Xf
 ```
-
-<!-- END destroy -->
-<!-- END down -->
