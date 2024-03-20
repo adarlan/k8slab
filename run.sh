@@ -4,16 +4,30 @@ set -e
 shellOptions="-ex"
 
 if [ $# -eq 1 ]; then
-    target=$1
-    target_status=off
+    selected_cmd=$1
+    selected_target=""
+
+elif [ $# -eq 2 ]; then
+    selected_cmd=$1
+    selected_target=$2
+
 else
     echo "Usage:"
+    echo
+    current_cmd=""
     while IFS= read -r line; do
-        if [[ $line =~ ^\<\!\-\-\ BEGIN\ (.*)\ \-\-\>$ ]]; then
-            option="${BASH_REMATCH[1]}"
-            echo "  ./run.sh $option"
+        
+        if [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]]; then
+            cmd="${BASH_REMATCH[1]}"
+            echo "./run.sh $cmd"
+            current_cmd=$cmd
+        
+        elif [[ $line =~ ^\<\!\-\-\ TARGET\ (.*)\ \-\-\>$ ]]; then
+            target="${BASH_REMATCH[1]}"
+            echo "./run.sh $current_cmd $target"
         fi
     done < "README.md"
+    exit 0
 fi
 
 echo '#/bin/bash' > script.sh
@@ -21,17 +35,18 @@ echo 'set -e' >> script.sh
 echo 'echo' >> script.sh
 chmod +x script.sh
 
+current_cmd=""
+current_target=""
+
 is_inside_script_block="false"
 
-printf_title=""
-press_enter_to_continue="false"
-add_title() {
-    [ "$printf_title" != "" ] && echo $printf_title >> script.sh
-    printf_title=""
-    if [ "$press_enter_to_continue" = "true" ]; then
-        # echo 'read -p "Press Enter to continue..."' >> script.sh
-        press_enter_to_continue="false"
+is_on_target() {
+    if [ "$current_cmd" = "$selected_cmd" ]; then
+        if [ "$selected_target" = "" ] || [ "$selected_target" = "$current_target" ]; then
+            return 0; # yes
+        fi
     fi
+    return 1; # no
 }
 
 while IFS= read -r line; do
@@ -54,36 +69,55 @@ while IFS= read -r line; do
     else
 
         # Script block begin (line=```bash)
-        if [ "$line" = "\`\`\`bash" ] && [ "$target_status" = "on" ]; then
-            add_title
+        if [ "$line" = "\`\`\`bash" ] && is_on_target; then
             is_inside_script_block="true"
             echo "(" >> script.sh
             echo "set $shellOptions" >> script.sh
 
-        # Title
-        elif [[ "$line" == \#* ]]; then
-            if [[ $line =~ ^\#\#\ .*$ ]]; then
-                press_enter_to_continue="true"
-            fi
-            printf_title="printf \"\\e[1;34m$line\\e[0m\\n\""
-
-        # <!-- BEGIN target -->
-        elif [[ $line =~ ^\<\!\-\-\ BEGIN\ $target\ \-\-\>$ ]]; then
-            target_status=on
-
-        # <!-- END target -->
-        elif [[ $line =~ ^\<\!\-\-\ END\ $target\ \-\-\>$ ]]; then
-            target_status=off
-
-        # <!-- COMMAND command -->
-        elif [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]] && [ "$target_status" = "on" ]; then
-            add_title
+        # EXEC
+        elif [[ $line =~ ^\<\!\-\-\ EXEC\ (.*)\ \-\-\>$ ]] && is_on_target; then
+            # add_title
             command="${BASH_REMATCH[1]}"
             echo "(" >> script.sh
             echo "set $shellOptions" >> script.sh
             echo "$command" >> script.sh
             echo ")" >> script.sh
             echo "echo" >> script.sh
+
+        # COMMAND
+        elif [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]]; then
+            current_cmd="${BASH_REMATCH[1]}"
+
+        # TARGET
+        elif [[ $line =~ ^\<\!\-\-\ TARGET\ (.*)\ \-\-\>$ ]]; then
+            current_target="${BASH_REMATCH[1]}"
+            current_target_level=""
+
+        # Title
+        elif [[ "$line" == \#* ]]; then
+
+            if [ "$current_target" != "" ]; then
+
+                str=$line
+                level=0
+
+                while [[ "$str" =~ ^# ]]; do
+                    ((++level))
+                    str="${str#'#'}" # Remove the first '#' character
+                done
+
+                if [ "$current_target_level" = "" ]; then
+                    current_target_level=$level
+
+                elif [ "$current_target_level" -ge "$level" ]; then
+                    current_target=""
+                fi
+            fi
+
+            if is_on_target; then
+                echo "printf \"\\e[1;34m$line\\e[0m\\n\"" >> script.sh
+                # echo 'read -p "Press Enter to continue..."' >> script.sh
+            fi
 
         # elif [[ $line =~ ^\<\!\-\-\ CONFIG\ ([a-zA-Z]+)\:\ (.*)\ \-\-\>$ ]]; then
         #     # CONFIG
