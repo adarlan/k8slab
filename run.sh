@@ -3,8 +3,6 @@ set -e
 
 shellOptions="-ex"
 
-# [ $# -eq 1 ] && function="$1" || function="__main__"
-
 if [ $# -eq 1 ]; then
     target=$1
     target_status=off
@@ -22,10 +20,6 @@ echo '#/bin/bash' > script.sh
 echo 'set -e' >> script.sh
 echo 'echo' >> script.sh
 chmod +x script.sh
-
-# functionName="__main__"
-# echo "$functionName() {" >> script.sh
-# echo ":" >> script.sh
 
 is_inside_script_block="false"
 
@@ -81,12 +75,6 @@ while IFS= read -r line; do
         elif [[ $line =~ ^\<\!\-\-\ END\ $target\ \-\-\>$ ]]; then
             target_status=off
 
-        # elif [[ $line =~ ^\<\!\-\-\ FUNCTION\ ([a-z_]+)\ \-\-\>$ ]]; then
-        #     # FUNCTION
-        #     functionName="${BASH_REMATCH[1]}"
-        #     echo "}" >> script.sh
-        #     echo "$functionName() {" >> script.sh
-
         # <!-- COMMAND command -->
         elif [[ $line =~ ^\<\!\-\-\ COMMAND\ (.*)\ \-\-\>$ ]] && [ "$target_status" = "on" ]; then
             add_title
@@ -108,8 +96,5 @@ while IFS= read -r line; do
         fi
     fi
 done < "README.md"
-
-# echo "}" >> script.sh
-# echo "$function" >> script.sh
 
 bash script.sh
