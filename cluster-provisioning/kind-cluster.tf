@@ -1,4 +1,4 @@
-resource "kind_cluster" "default" {
+resource "kind_cluster" "k8slab" {
 
   name = "k8slab"
 

@@ -1,6 +1,6 @@
 resource "null_resource" "local_exec" {
 
-  depends_on = [kind_cluster.default]
+  depends_on = [kind_cluster.k8slab]
 
   provisioner "local-exec" {
     interpreter = ["sh", "-c"]

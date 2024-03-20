@@ -1,6 +1,6 @@
 output "endpoint" {
   sensitive = true
-  value     = kind_cluster.default.endpoint
+  value     = kind_cluster.k8slab.endpoint
 }
 
 output "ca_key" {
@@ -10,15 +10,15 @@ output "ca_key" {
 
 output "ca_certificate" {
   sensitive = true
-  value     = kind_cluster.default.cluster_ca_certificate
+  value     = kind_cluster.k8slab.cluster_ca_certificate
 }
 
 output "root_user_key" {
   sensitive = true
-  value     = kind_cluster.default.client_key
+  value     = kind_cluster.k8slab.client_key
 }
 
 output "root_user_certificate" {
   sensitive = true
-  value     = kind_cluster.default.client_certificate
+  value     = kind_cluster.k8slab.client_certificate
 }
