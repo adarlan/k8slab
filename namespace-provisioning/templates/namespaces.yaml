@@ -1,9 +1,11 @@
 {{ range .Values.namespaces }}
 
+{{ if not .skipCreation }}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .name }}
+{{ end }}
 
 {{ end }}

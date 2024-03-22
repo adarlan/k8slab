@@ -1,18 +1,27 @@
-{{ range .Values.namespaces }}
+{{- $presets := .Values.presets }}
 
-{{ $namespaceName := .name }}
-{{ $hardResourceQuota := .hardResourceQuota }}
+{{- range .Values.namespaces }}
 
-{{ if $hardResourceQuota }}
+{{- $computePreset := .computePreset | default "standardCompute" }}
+{{- $computeResources := (hasKey . "computeResources") | ternary .computeResources (get $presets $computePreset) }}
+
+{{- $persistencePreset := .persistencePreset | default "standardPersistence" }}
+{{- $persistenceResources := (hasKey . "persistenceResources") | ternary .persistenceResources (get $presets $persistencePreset) }}
+
 ---
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: {{ $namespaceName }}
-  namespace: {{ $namespaceName }}
+  name: {{ .name }}
+  namespace: {{ .name }}
 spec:
   hard:
-{{ toYaml $hardResourceQuota | indent 4 }}
+    pods:            "{{ $computeResources.maxPodCount }}"
+    requests.cpu:    "{{ $computeResources.cpu.requests.quota }}"
+    requests.memory: "{{ $computeResources.memory.requests.quota }}"
+    limits.cpu:      "{{ $computeResources.cpu.limits.quota }}"
+    limits.memory:   "{{ $computeResources.memory.limits.quota }}"
+    persistentvolumeclaims: "{{ $persistenceResources.maxPvcCount }}"
+    requests.storage:       "{{ $persistenceResources.storage.quota }}"
 
-{{ end }}
-{{ end }}
+{{- end }}

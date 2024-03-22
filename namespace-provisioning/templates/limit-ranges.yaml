@@ -1,0 +1,38 @@
+{{- $presets := .Values.presets }}
+
+{{- range .Values.namespaces }}
+
+{{- $computePreset := .computePreset | default "standardCompute" }}
+{{- $computeResources := (hasKey . "computeResources") | ternary .computeResources (get $presets $computePreset) }}
+
+{{- $persistencePreset := .persistencePreset | default "standardPersistence" }}
+{{- $persistenceResources := (hasKey . "persistenceResources") | ternary .persistenceResources (get $presets $persistencePreset) }}
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ .name }}
+  namespace: {{ .name }}
+spec:
+  limits:
+  - type: Container
+    defaultRequest:
+      cpu:    "{{ $computeResources.cpu.requests.default }}"
+      memory: "{{ $computeResources.memory.requests.default }}"
+    default:
+      cpu:    "{{ $computeResources.cpu.limits.default }}"
+      memory: "{{ $computeResources.memory.limits.default }}"
+    min:
+      cpu:    "{{ $computeResources.cpu.requests.min }}"
+      memory: "{{ $computeResources.memory.requests.min }}"
+    max:
+      cpu:    "{{ $computeResources.cpu.limits.max }}"
+      memory: "{{ $computeResources.memory.limits.max }}"
+  - type: PersistentVolumeClaim
+    min:
+      storage: "{{ $persistenceResources.storage.min }}"
+    max:
+      storage: "{{ $persistenceResources.storage.max }}"
+
+{{- end }}

@@ -1,57 +1,117 @@
 namespaces:
 
+- name: example
+  computeResources:
+    maxPodCount: 0   # The maximum number of pods within the namespace.
+    cpu:
+      requests:
+        quota: 0m    # The total   amount of CPU resources that all pods within the namespace are guaranteed to have available.
+        default: 0m  # The default amount of CPU resources that each pod within the namespace is guaranteed to have available.
+        min: 0m      # The minimum amount of CPU resources that each pod within the namespace is guaranteed to have available.
+      limits:
+        quota: 0m    # The total   amount of CPU resources that all pods within the namespace can consume.
+        default: 0m  # The default amount of CPU resources that each pod within the namespace can consume.
+        max: 0m      # The maximum amount of CPU resources that each pod within the namespace can consume.
+    memory:
+      requests:
+        quota: 0Mi   # The total   amount of memory that all pods within the namespace are guaranteed to have available.
+        default: 0Mi # The default amount of memory that each pod within the namespace is guaranteed to have available.
+        min: 0Mi     # The minimum amount of memory that each pod within the namespace is guaranteed to have available.
+      limits:
+        quota: 0Mi   # The total   amount of memory that all pods within the namespace can consume.
+        default: 0Mi # The default amount of memory that each pod within the namespace can consume.
+        max: 0Mi     # The maximum amount of memory that each pod within the namespace can consume.
+  persistenceResources:
+    maxPvcCount: 0   # The maximum number of PVCs within the namespace.
+    storage:
+      quota: 0Gi     # The total   amount of storage resources that all PVCs within the namespace can request.
+      min: 0Gi       # The minimum amount of storage resources that each PVC within the namespace can request.
+      max: 0Gi       # The maximum amount of storage resources that each PVC within the namespace can request.
+
+- name: default
+  skipCreation: true # Because it already exists
+  computePreset: noCompute
+  persistencePreset: noPersistence
+
 - name: ingress
-  hardResourceQuota:
-    pods: "5"
-    requests.cpu: 500m
-    requests.memory: 500M
-    limits.cpu: 750m
-    limits.memory: 1G
+  persistencePreset: noPersistence
+  computeResources:
+    maxPodCount: 5
+    cpu:
+      requests: { quota: 500m, default: 100m, min: 50m }
+      limits:   { quota: 750m, default: 150m, max: 200m }
+    memory:
+      requests: { quota: 512Mi, default: 128Mi, min: 64Mi }
+      limits:   { quota: 1Gi,   default: 256Mi, max: 512Mi }
 
 - name: argocd
-  # hardResourceQuota:
-  #   pods: "16"
-  #   requests.cpu: 100m
-  #   requests.memory: 512Mi
-  #   limits.cpu: 750m
-  #   limits.memory: 1Gi
+  computePreset: highCompute
+  persistencePreset: noPersistence
 
 - name: monitoring
-  # hardResourceQuota:
-  #   pods: "32"
-  #   requests.cpu: 100m
-  #   requests.memory: 1Gi
-  #   limits.cpu: 1500m
-  #   limits.memory: 2Gi
+  computePreset: highCompute
+  persistencePreset: noPersistence
 
 - name: development
-  hardResourceQuota:
-    pods: "5"
-    requests.cpu: 50m
-    requests.memory: 128Mi
-    limits.cpu: 250m
-    limits.memory: 512Mi
+  computePreset: lowCompute
+  persistencePreset: noPersistence
 
 - name: staging
-  hardResourceQuota:
-    pods: "10"
-    requests.cpu: 100m
-    requests.memory: 256Mi
-    limits.cpu: 500m
-    limits.memory: 1Gi
+  computePreset: standardCompute
+  persistencePreset: noPersistence
 
 - name: production
-  hardResourceQuota:
-    pods: "20"
-    requests.cpu: 200m
-    requests.memory: 512Mi
-    limits.cpu: 1000m
-    limits.memory: 2Gi
+  computePreset: highCompute
+  persistencePreset: noPersistence
 
 - name: crudify
-  hardResourceQuota:
-    pods: "50"
-    requests.cpu: 500m
-    limits.cpu:   2000m
-    requests.memory: 512Mi
-    limits.memory:   2Gi
+- name: crudify-api
+- name: crudify-database
+- name: crudify-clients
+
+# ------------------------------------------------------------------------------
+presets:
+
+  standardCompute:
+    maxPodCount: 16
+    cpu:
+      requests: { quota: 500m, default: 50m, min: 25m }
+      limits:   { quota: 750m, default: 75m, max: 100m }
+    memory:
+      requests: { quota: 512Mi, default: 64Mi,  min: 32Mi }
+      limits:   { quota: 1Gi,   default: 128Mi, max: 256Mi }
+
+  standardPersistence:
+    maxPvcCount: 4
+    storage: { quota: 8Gi, min: 1Gi, max: 4Gi }
+
+  noCompute:
+    maxPodCount: 0
+    cpu:
+      requests: { quota: 0, default: 0, min: 0 }
+      limits:   { quota: 0, default: 0, max: 0 }
+    memory:
+      requests: { quota: 0, default: 0, min: 0 }
+      limits:   { quota: 0, default: 0, max: 0 }
+
+  noPersistence:
+    maxPvcCount: 0
+    storage: { quota: 0, min: 0, max: 0 }
+
+  lowCompute:
+    maxPodCount: 5
+    cpu:
+      requests: { quota: 50m,  default: 10m, min: 5m }
+      limits:   { quota: 100m, default: 25m, max: 50m }
+    memory:
+      requests: { quota: 64Mi,  default: 16Mi, min: 8Mi }
+      limits:   { quota: 128Mi, default: 32Mi, max: 64Mi }
+
+  highCompute:
+    maxPodCount: 100
+    cpu:
+      requests: { quota: 1000m, default: 100m, min: 10m }
+      limits:   { quota: 2000m, default: 500m, max: 1000m }
+    memory:
+      requests: { quota: 2Gi, default: 128Mi, min: 32Mi }
+      limits:   { quota: 4Gi, default: 512Mi, max: 1Gi }
