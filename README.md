@@ -79,9 +79,10 @@ These are the CLI tools required for setting up and interacting with your local 
 - [kustomize](https://kustomize.io/) (built into kubectl) for simplified manifest configuration.
 
 <!-- COMMAND up -->
+## Simulation Run
 
-<!-- TARGET cluster-provisioning -->
-## 1. Cluster Provisioning
+<!-- COMMAND apply cluster-provisioning -->
+### 1. Cluster Provisioning
 
 Creating a local Kubernetes cluster.
 
@@ -98,7 +99,7 @@ terraform -chdir=cluster-provisioning init
 terraform -chdir=cluster-provisioning apply -auto-approve
 ```
 
-### Cluster Credentials
+#### Cluster Credentials
 
 These credentials are necessary for users and service accounts to connect to the cluster:
 
@@ -122,7 +123,7 @@ The cluster CA key is necessary for signing user certificates:
 terraform -chdir=cluster-provisioning output -raw ca_key > cluster-ca.key
 ```
 
-### Root User Credentials
+#### Root User Credentials
 
 These credentials are necessary for [cluster-level RBAC configuration](#2-cluster-level-rbac-configuration).
 
@@ -144,8 +145,8 @@ echo \
 > root-user.credentials
 ```
 
-<!-- TARGET cluster-rbac -->
-## 2. Cluster-Level RBAC Configuration
+<!-- COMMAND apply cluster-rbac -->
+### 2. Cluster-Level RBAC Configuration
 
 Granting access to cluster-wide users and service accounts.
 
@@ -163,7 +164,7 @@ terraform -chdir=cluster-rbac init
 terraform -chdir=cluster-rbac apply $(cat root-user.credentials) -auto-approve
 ```
 
-### Namespace Provisioning Credentials
+#### Namespace Provisioning Credentials
 
 These credentials are necessary for [namespace provisioning](#3-namespace-provisioning).
 
@@ -181,7 +182,7 @@ echo \
 > namespace-provisioning.credentials
 ```
 
-### Namespace RBAC Credentials
+#### Namespace RBAC Credentials
 
 These credentials are necessary for [namespace-level RBAC configuration](#4-namespace-level-rbac-configuration).
 
@@ -199,7 +200,7 @@ echo \
 > namespace-rbac.credentials
 ```
 
-### Cluster Toolkit Credentials
+#### Cluster Toolkit Credentials
 
 These credentials are necessary for [cluster toolkit installation](#5-cluster-toolkit-installation).
 
@@ -215,7 +216,7 @@ echo \
 > cluster-toolkit.credentials
 ```
 
-### Jane Ops Credentials
+#### Jane Ops Credentials
 
 Jane Ops is a cluster-wide user responsible for operating the cluster.
 
@@ -245,8 +246,8 @@ kubectl config set-credentials janeops --client-key=janeops.key --client-certifi
 kubectl config set-context janeops --cluster=k8slab --user=janeops
 ```
 
-<!-- TARGET namespace-provisioning -->
-## 3. Namespace Provisioning
+<!-- COMMAND apply namespace-provisioning -->
+### 3. Namespace Provisioning
 
 Creating namespaces along with their resource quotas and limit ranges.
 
@@ -271,8 +272,8 @@ terraform -chdir=namespace-provisioning init
 terraform -chdir=namespace-provisioning apply $(cat namespace-provisioning.credentials) -auto-approve
 ```
 
-<!-- TARGET namespace-rbac -->
-## 4. Namespace-Level RBAC Configuration
+<!-- COMMAND apply namespace-rbac -->
+### 4. Namespace-Level RBAC Configuration
 
 Granting namespace-level access for users and service accounts.
 
@@ -290,7 +291,7 @@ terraform -chdir=namespace-rbac init
 terraform -chdir=namespace-rbac apply $(cat namespace-rbac.credentials) -auto-approve
 ```
 
-### Argo CD Application Deployer Credentials
+#### Argo CD Application Deployer Credentials
 
 These credentials are necessary for deploying applications to the cluster.
 
@@ -311,7 +312,7 @@ echo \
 > argocd-application-deployer.credentials
 ```
 
-### John Dev credentials
+#### John Dev Credentials
 
 John Dev is a namespace-level user responsible for developing applications,
 authorized to manage application resources in the `development` namespace.
@@ -342,8 +343,8 @@ kubectl config set-credentials johndev --client-key=johndev.key --client-certifi
 kubectl config set-context johndev --cluster=k8slab --user=johndev
 ```
 
-<!-- TARGET cluster-toolkit -->
-## 5. Cluster Toolkit Installation
+<!-- COMMAND install cluster-toolkit -->
+### 5. Cluster Toolkit Installation
 
 Installing tools that extend the cluster's functionality.
 
@@ -351,8 +352,8 @@ The configuration is defined in the [`cluster-toolkit`](./cluster-toolkit) direc
 
 This action requires the [cluster toolkit installation credentials](#cluster-toolkit-credentials).
 
-<!-- TARGET cluster-toolkit/ingress -->
-### Ingress Toolkit Installation
+<!-- COMMAND install cluster-toolkit ingress -->
+#### Ingress-Toolkit Installation
 
 This action will install the following components into the cluster:
 
@@ -364,8 +365,8 @@ terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-<!-- TARGET cluster-toolkit/argocd -->
-### ArgoCD Toolkit Installation
+<!-- COMMAND install cluster-toolkit argocd -->
+#### ArgoCD-Toolkit Installation
 
 This action will install the following components into the cluster:
 
@@ -377,19 +378,20 @@ terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-#### Argo CD admin password
+##### Argo CD Admin Password
 
 ```bash
 terraform -chdir=cluster-toolkit/argocd output -raw argocd_admin_password > argocd-admin.password
 ```
 
-#### Argo CD CLI login
+##### Argo CD CLI Login
 
 ```bash
 argocd login --grpc-web --insecure argocd.localhost --username admin --password $(cat argocd-admin.password)
 ```
 
-#### Argo CD user interface
+<!-- COMMAND open argocd -->
+##### Argo CD User Interface
 
 - [http://argocd.localhost](http://argocd.localhost)
 - Username: `admin`
@@ -399,8 +401,8 @@ argocd login --grpc-web --insecure argocd.localhost --username admin --password 
 <!-- EXEC echo Username: admin -->
 <!-- EXEC echo Password: $(cat argocd-admin.password) -->
 
-<!-- TARGET cluster-toolkit/monitoring -->
-### Monitoring Toolkit Installation
+<!-- COMMAND install cluster-toolkit monitoring -->
+#### Monitoring-Toolkit Installation
 
 This action will install the following components into the cluster:
 
@@ -415,19 +417,21 @@ terraform -chdir=cluster-toolkit/$name init
 terraform -chdir=cluster-toolkit/$name apply $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-#### Prometheus user interface
+<!-- COMMAND open prometheus -->
+##### Prometheus User Interface
 
 - [http://prometheus.localhost](http://prometheus.localhost)
 
 <!-- EXEC nohup xdg-open http://prometheus.localhost > /dev/null 2>&1 -->
 
-#### Grafana admin password
+##### Grafana Admin Password
 
 ```bash
 terraform -chdir=cluster-toolkit/monitoring output -raw grafana_admin_password > grafana-admin.password
 ```
 
-#### Grafana user interface
+<!-- COMMAND open grafana -->
+##### Grafana User Interface
 
 - [http://grafana.localhost](http://grafana.localhost)
 - Username: `admin`
@@ -437,12 +441,10 @@ terraform -chdir=cluster-toolkit/monitoring output -raw grafana_admin_password >
 <!-- EXEC echo Username: admin -->
 <!-- EXEC echo Password: $(cat grafana-admin.password) -->
 
-<!-- TARGET app-deploy -->
-## 6. Application Deployment
+<!-- COMMAND app-deploy -->
+### 6. Application Deployment
 
 Deploying example applications to the cluster.
-
-#### Application source code
 
 The source code of the applications reside in the [`app-code`](./app-code/) directory:
 
@@ -452,8 +454,6 @@ The source code of the applications reside in the [`app-code`](./app-code/) dire
 GitHub Actions watches for changes in these directories
 to test, build and push the Docker images to Docker Hub.
 
-#### Application deployment configuration
-
 The deployment configuration of the applications reside in the [`app-deploy`](./app-deploy/) directory.
 
 - [`app-deploy/hello-world`](./app-deploy/hello-world/)
@@ -462,8 +462,8 @@ The deployment configuration of the applications reside in the [`app-deploy`](./
 Argo CD watches for changes in these directories
 to deploy and synchronize modifications into the cluster.
 
-<!-- TARGET app-deploy/hello-world -->
-### Hello World
+<!-- COMMAND app-deploy hello-world -->
+#### Hello World
 
 The Hello World application is a simple web application that displays a greeting message.
 
@@ -494,7 +494,7 @@ You can change this configuration by editing the
 [`app-deploy/hello-world/argocd-application-set.yaml`](./app-deploy/hello-world/argocd-application-set.yaml)
 file.
 
-#### Hello World Deployment
+##### Hello World Deployment
 
 This action requires the Argo CD application deployer credentials.
 
@@ -506,13 +506,13 @@ apply \
 --filename app-deploy/hello-world/argocd-application-set.yaml
 ```
 
-#### Hello World Synchronization
+##### Hello World Synchronization
 
 ```bash
 argocd app wait --selector appset=hello-world
 ```
 
-#### Hello World Health Check
+##### Hello World Health Check
 
 The Hello World application exposes a `/healthz` endpoint,
 which serves as a health check interface:
@@ -538,7 +538,7 @@ for url in $urls; do
 done
 ```
 
-#### Hello World User Interface
+##### Hello World User Interface
 
 Open in your browser:
 
@@ -554,8 +554,8 @@ curl http://staging.hello.localhost
 curl http://hello.localhost
 ```
 
-<!-- TARGET app-deploy/crudify -->
-### CRUDify
+<!-- COMMAND app-deploy crudify -->
+#### CRUDify
 
 CRUDify is a CRUD application written in Python.
 
@@ -617,7 +617,7 @@ In each execution, they perform a random number of iterations.
 For each iteration, they call the CRUDify API with random queries and data.
 Some random-generated data may fail validation, leading to expected bad request errors.
 
-#### CRUDify Deployment
+##### CRUDify Deployment
 
 We'll use the Argo CD `Application` resource to deploy the CRUDify application.
 
@@ -631,7 +631,7 @@ apply \
 --filename app-deploy/crudify/argocd-application.yaml
 ```
 
-#### CRUDify Synchronization
+##### CRUDify Synchronization
 
 - http://argocd.localhost/applications/argocd/crudify?view=tree
 
@@ -639,7 +639,7 @@ apply \
 argocd app wait crudify
 ```
 
-#### CRUDify Health Check
+##### CRUDify Health Check
 
 Each API service exposes a `/healthz` endpoint:
 
@@ -665,7 +665,7 @@ for url in $urls; do
 done
 ```
 
-#### CRUDify API
+##### CRUDify API
 
 Clients interact with CRUDify's API via HTTP requests:
 
@@ -702,7 +702,7 @@ curl -X DELETE \
 http://crud.localhost/item-deleter/api/items/%5EBarFoo%24
 ```
 
-#### CRUDify Logs
+##### CRUDify Logs
 
 The logs are directed to stdout and transiently stored in files on the cluster nodes.
 These logs are then collected by Promtail agents and forwarded to the Loki server,
@@ -713,7 +713,7 @@ Logs for the last 30 minutes:
 - Grafana >> Explore >> Select datasource: `loki` >> Select label: `namespace` >> Select value: `crudify` >> Select range: `Last 30 minutes` >> Run query
 - http://grafana.localhost/explore?schemaVersion=1&orgId=1&panes=%7B%22dHt%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bnamespace%3D%5C%22crudify%5C%22%7D%20%7C%3D%20%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-30m%22%2C%22to%22%3A%22now%22%7D%7D%7D
 
-#### CRUDify Metrics
+##### CRUDify Metrics
 
 The API services are instrumented to provide Prometheus metrics.
 Each service is equipped with its own service monitor,
@@ -748,84 +748,85 @@ Other examples:
 - Items failed to create due to server error: `sum(crudify_http_requests_total{method="POST", status="500"})`
 - Successful requests by method: `sum by (method) (crudify_http_requests_total{status="200"})`
 
-#### CRUDify Dashboards
+##### CRUDify Dashboards
 
 - http://grafana.localhost/d/crudify
 
 <!-- COMMAND down -->
-## 7. Cleanup and Tear Down
+## 7. Simulation Terminate
 
 This step involves deleting all resources in the cluster,
 which includes undeploying applications, uninstalling cluster toolkit, and removing RBAC and namespace configurations.
 Finally, the cluster itself is destroyed.
 
-<!-- TARGET apps -->
-### Undeploying applications
+<!-- COMMAND undeploy hello-world -->
+### Undeploy Hello World Application
 
 ```bash
-# Undeploying Hello World
 argocd appset delete hello-world --yes
+```
 
-# Undeploying CRUDify
+<!-- COMMAND undeploy crudify -->
+### Undeploy CRUDify Application
+
+```bash
 argocd app delete crudify --yes
 ```
 
-<!-- TARGET cluster-toolkit -->
-### Cluster Toolkit Uninstall
-
-<!-- TARGET cluster-toolkit/monitoring -->
-#### Monitoring Toolkit Uninstall
+<!-- COMMAND uninstall monitoring -->
+### Uninstall Monitoring Toolkit
 
 ```bash
 terraform -chdir=cluster-toolkit/monitoring destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-<!-- TARGET cluster-toolkit/argocd -->
-#### ArgoCD Toolkit Uninstall
+<!-- COMMAND uninstall argocd -->
+### Uninstall ArgoCD Toolkit
 
 ```bash
 terraform -chdir=cluster-toolkit/argocd destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-<!-- TARGET cluster-toolkit/ingress -->
-#### Ingress Toolkit Uninstall
+<!-- COMMAND uninstall ingress -->
+### Uninstall Ingress Toolkit
 
 ```bash
 terraform -chdir=cluster-toolkit/ingress destroy $(cat cluster-toolkit.credentials) -auto-approve
 ```
 
-### Removing RBAC and namespace configurations
-
-<!-- TARGET namespace-rbac -->
-#### Destroy Namespace RBAC
+<!-- COMMAND remove namespace-rbac -->
+### Remove Namespace RBAC Configuration
 
 ```bash
 terraform -chdir=namespace-rbac destroy $(cat namespace-rbac.credentials) -auto-approve
 ```
 
-<!-- TARGET namespace-provisioning -->
-#### Destroy Namespace Provisioning
+<!-- COMMAND remove namespace-provisioning -->
+### Remove Namespace Provisioning
 
 ```bash
 terraform -chdir=namespace-provisioning destroy $(cat namespace-provisioning.credentials) -auto-approve
 ```
 
-<!-- TARGET cluster-rbac -->
-#### Destroy Cluster RBAC
+<!-- COMMAND remove cluster-rbac -->
+### Remove Cluster RBAC Configuration
 
 ```bash
 terraform -chdir=cluster-rbac destroy $(cat root-user.credentials) -auto-approve
 ```
 
-<!-- TARGET cluster-provisioning -->
-### Destroying cluster
+<!-- COMMAND destroy cluster -->
+### Destroy Cluster
 
 ```bash
 terraform -chdir=cluster-provisioning destroy -auto-approve
 ```
 
-<!-- TARGET cluster-nodes -->
-### Forcibly destroying cluster
+<!-- COMMAND clean -->
+### Clean
+
+<!-- COMMAND clean nodes -->
+#### Delete Cluster Nodes
 
 If for some reason previous cleanup actions failed,
 or if you lost a Terraform state,
@@ -839,8 +840,8 @@ docker ps -a --format "{{.Names}}" | grep "^k8slab-" | while read -r container_n
 done
 ```
 
-<!-- TARGET gitignored -->
-### Removing gitignored files
+<!-- COMMAND clean files -->
+#### Removing gitignored files
 
 ```bash
 (cd cluster-toolkit; git clean -Xfd)
