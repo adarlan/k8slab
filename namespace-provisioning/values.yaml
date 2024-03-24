@@ -81,6 +81,15 @@ namespaces:
   persistencePreset: noPersistence
 
 - name: crudify
+  computeResources:
+    maxPodCount: 20
+    cpu:
+      requests: { quota: 1,   default: 50m,  min: 25m }
+      limits:   { quota: 2.6, default: 100m, max: 500m }
+    memory:
+      requests: { quota: 2Gi, default: 128Mi, min: 64Mi }
+      limits:   { quota: 4Gi, default: 256Mi, max: 1Gi }
+
 - name: crudify-api
 - name: crudify-database
 - name: crudify-clients
